@@ -24,6 +24,7 @@ version header and changelog; changes without a version bump are defects.
 | 15 | [Testing Strategy](15-testing-strategy.md) | Test pyramid, gates, release ritual |
 | 16 | [Risk Register](16-risk-register.md) | Scored risks with mitigations and early warnings |
 | 17 | [Glossary](17-glossary.md) | Normative definitions of every term |
+| 18 | [Non-Functional & SLOs](18-nonfunctional-slo.md) | Data classification, SLOs with error budgets, capacity math, concurrency, tenancy, DR |
 | -- | [What Broke](what-broke.md) | Real-time failure ledger, appended during build |
 
 ## Conventions
