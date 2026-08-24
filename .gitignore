@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+.venv/
+node_modules/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.aws-sam/
+*.db
+.DS_Store
