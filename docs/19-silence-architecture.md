@@ -219,7 +219,8 @@ after the scam; we will.
 | v1.5 | B partial (notification layer, share sheet), E (money gate beta) | semi-passive arrives |
 | v2 | C full network sentinel, B full call/SMS screening (Android), RADAR birth | THE silence release |
 | v3 | D full voice swarm, F full counter-offense automation, iOS message filter entitlement | feature-phone coverage, state alliance |
-| v4 | international packs (Pix, GCash rails), insurance/bank partnerships around golden hour | category leadership |
+| v3.x | AEGIS module: deepfake-media screening lineage (owner holds two published papers, IEEE PuneCon 2025 DOI 10.1109/PuneCon67554.2025.11379757, i-manager JIP 12(3) DOI 10.26634/jip.12.3.22384) retrained against current generators; forwarded voice notes, images, and video get authenticity verdicts inside evidence bundles; near-real-time scoring inside owned surfaces | differentiator module; graduated silence law and FP-harm metrics apply fully |
+| v4 | international packs (Pix, GCash rails), insurance/bank partnerships around golden hour, AEGIS OEM trust-layer licensing (device-level media gates, the HMD-Fuse class of capability, via Android OEM partnerships) | category leadership |
 
 ## 8. Acceptance Criteria for This Document
 
