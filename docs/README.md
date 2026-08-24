@@ -7,6 +7,7 @@ version header and changelog; changes without a version bump are defects.
 
 | # | Document | What it answers |
 |---|----------|-----------------|
+| 19 | [Silence Architecture](19-silence-architecture.md) | The doctrine: eight layers, graduated silence, lightweight+private constitution, honest limits, golden hour |
 | 13 | [PR/FAQ](13-prfaq.md) | Would customers want this? Amazon working-backwards gate |
 | 01 | [Vision](01-vision.md) | Problem, market, competition, business model, risks |
 | 02 | [Product Spec](02-product-spec.md) | Journeys, features, acceptance criteria |
@@ -26,6 +27,15 @@ version header and changelog; changes without a version bump are defects.
 | 17 | [Glossary](17-glossary.md) | Normative definitions of every term |
 | 18 | [Non-Functional & SLOs](18-nonfunctional-slo.md) | Data classification, SLOs with error budgets, capacity math, concurrency, tenancy, DR |
 | -- | [What Broke](what-broke.md) | Real-time failure ledger, appended during build |
+
+## Doctrine Note
+
+Doc 19 (Silence Architecture) is the north star: it overrides older phrasing
+wherever they conflict. Notably, charter principle 1 ("recommend, never act")
+applies to MONEY and MESSAGE SENDING without exception; passive filtering
+(never-ring call screening, network-level link blocking) is governed by doc 19
+section 3 graduated silence law instead. Charter amendment pending owner
+approval.
 
 ## Conventions
 
