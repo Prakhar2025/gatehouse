@@ -133,6 +133,20 @@ slides batched separately, S1/S10 last. Every shot recorded twice minimum.
 - Tracks entered: Everyday Agents.
 - Assets checklist mirrors hackathon requirements list verbatim, owned by P7.
 
+### 5.1 Rules Compliance Register (from Official Rules read in full, Aug 24)
+
+| Rule | Requirement | Our action |
+|---|---|---|
+| New Projects Only | Work must be built during Submission Period (Aug 10 to Sep 14); pre-existing incorporated work must be disclosed | Gatehouse repo created Aug 24 (inside window), all code fresh. Prior art disclosure line REQUIRED in README: design informed by builder's earlier projects (ScamShield, TruthLayer, Sentinel), zero code imported. NEVER copy old repos into Gatehouse |
+| Judging math | Stage 1 pass/fail theme+tools gate; Stage 2 five equally weighted criteria scored 1-5; bonus up to 0.6 via builder.aws.com posts (0.2 each, MAX THREE posts); final 1-5.6 | Plan THREE posts, not two, to capture full 0.6. Tie-break favors Technical Implementation: deepen Strands usage (hooks, session management, structured output, Agent-as-Tool) as differentiator |
+| Testing access | Project must stay available FREE and unrestricted for Sponsor/Admin/Judges until Judging Period ends (Oct 8) | Live demo + console stay up through October; budget credits accordingly; do not tear down staging after submitting |
+| Language | ALL materials English (video included) | en-first console strings confirmed; video narration English |
+| Video hosting | YouTube or Vimeo, public | YouTube unlisted-to-public flip at submission |
+| Drafts | Draft submissions savable before period ends | Save Devpost DRAFT by Sep 5, submit final by Sep 10 |
+| AWS Builder ID | Required field | Create early, store in password manager, never commit |
+| Credits | Form due Sep 11 12pm PT, one per entrant, expire Oct 31 | Submitted Aug 24; burn plan targets AgentCore+Bedrock during P4-P7 well before expiry |
+| Ownership | Original work, solely owned, OSS licenses respected | MIT chosen; audit any copied snippet from tutorials/StackOverflow; document third-party SDK licenses in NOTICE if used |
+
 ## 6. builder.aws.com Bonus Post Plan
 
 Title format: "Agents for Humans: Building Gatehouse, a fraud-defense agent for
