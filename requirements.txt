@@ -23,3 +23,5 @@ pytest>=8.2
 pytest-cov>=5.0
 ruff>=0.5
 mypy>=1.10
+bedrock-agentcore-starter-toolkit>=1.0
+opentelemetry-sdk>=1.25

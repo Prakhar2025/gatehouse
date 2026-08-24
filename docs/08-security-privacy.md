@@ -52,6 +52,23 @@ Layer 5 share:      hashed identifiers only cross the graph boundary
 Layer 6 delete:     cascade purge + KMS key destruction + certificate
 ```
 
+### 3.1 Household Key Recovery (guardian lockout is a company-killing edge case)
+
+The household data key protects vault items. If the guardian loses their device
+and credentials, the family must not lose its sealed evidence forever, and an
+attacker must not gain anything by stealing the guardian's phone alone.
+
+Design: Shamir 3-of-5 secret sharing of the household key-wrapping material.
+Shares held by: guardian device secure enclave, two designated circle members'
+devices (chosen at onboarding, default ON), and an escrow share encrypted under
+the builder-side break-glass KMS key whose use requires two-person-style dual
+authorization (owner + logged justification) until a second staff member exists,
+after which escrow moves fully off-platform. Recovery ceremony: identity
+re-verification via existing member bindings plus waiting period (48h, cancellable
+by any member, notification fan-out on initiation) so a thief who grabs one phone
+gets nothing and gets loudly announced. Drills: recovery rehearsal joins the P7
+checklist beside the destruction drill.
+
 PII minimization rules (enforced by code, tested): phone numbers, emails, bank
 accounts, card-like numbers, government IDs found in content are replaced by
 typed placeholders ([PHONE_1]) in the working copy; originals sealed to vault;

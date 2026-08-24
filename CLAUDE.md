@@ -53,8 +53,10 @@ architecture, 04 agent contracts, 05 channels, 06 data, 07 evaluation,
 ## Section 5: Non-Negotiable Principles
 
 1. Recommend, never act autonomously on money or messages. The agent never moves
-   money, never sends messages on behalf of a human except digest notifications,
-   never blocks anything by itself. Humans decide at the gate.
+   money and never sends messages as a human. Passive filtering (call screening,
+   link blocking) follows the graduated silence law in
+   docs/19-silence-architecture.md section 3. Humans decide anything touching
+   money, member-visible actions, or ambiguous cases at the gate.
 2. Every verdict is explainable. Evidence bundle or it did not happen.
 3. Untrusted content is quarantined. Text from forwarded messages never flows
    raw into prompts. Fencing, instruction firewall, injection canaries. See 08.
