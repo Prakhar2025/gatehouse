@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 03-architecture |
@@ -14,6 +14,7 @@
 
 | Version | Change |
 |---|---|
+| 0.2.0 | CI/CD pipeline converted to Mermaid flow diagram |
 | 0.1.0 | Initial draft |
 
 ## 1. Environments
@@ -44,20 +45,23 @@ publish, smoke test. Clean-account-to-working-system target: under 45 minutes.
 
 ## 3. CI/CD Pipeline (GitHub Actions)
 
-```
-on PR:
-  lint (ruff, prettier/eslint) -> type check (mypy strict, tsc)
-  -> unit tests -> prompt-lint + schema checks
-  -> fast eval slice (offline deterministic set)
-  -> build images (no push unless green)
-
-on merge to main:
-  everything above -> nightly eval replay vs staging (tolerance gates)
-  -> deploy staging -> smoke suite -> chaos spot checks
-
-on tag vX.Y.Z:
-  manual approval gate -> prod deploy -> smoke + canary traffic (eval shadow)
-  -> auto-rollback trigger on SLO breach within 30 min window
+```mermaid
+flowchart TB
+    subgraph PR["on pull request"]
+        L["lint: ruff + prettier/eslint"] --> T["type check:<br/>mypy strict + tsc"]
+        T --> UT["unit tests"] --> PL["prompt-lint +<br/>schema checks"]
+        PL --> FE["fast eval slice<br/>(offline deterministic)"]
+        FE --> BI["build images<br/>(push only if green)"]
+    end
+    subgraph MM["on merge to main"]
+        BI --> NE["nightly eval replay vs staging<br/>tolerance gates"]
+        NE --> DS["deploy staging"] --> SM["smoke suite"] --> CH["chaos spot checks"]
+    end
+    subgraph REL["on tag vX.Y.Z"]
+        CH --> MA["manual approval gate"] --> PD["prod deploy"]
+        PD --> CK["smoke + canary probe<br/>(eval shadow traffic)"]
+        CK --> RB["auto-rollback on SLO breach<br/>30 min window"]
+    end
 ```
 
 Rollback strategy: SAM stack version aliases + AgentCore runtime keeps prior

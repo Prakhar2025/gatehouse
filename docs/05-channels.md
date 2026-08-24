@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 02-product-spec, 03-architecture |
@@ -14,6 +14,7 @@
 
 | Version | Change |
 |---|---|
+| 0.2.0 | Ingestion pipeline converted to Mermaid flow diagram |
 | 0.1.0 | Initial draft |
 
 ## 1. Channel Strategy Overview
@@ -80,12 +81,16 @@ matrix).
 
 ## 5. Ingestion Gateway Pipeline (shared by all channels)
 
-```
-receive -> validate sender binding -> normalize (text extraction incl OCR)
-   -> content_hash -> dedupe check (TTL 72h)
-   -> PII minimization pass (sealed vault writes, redacted working copy)
-   -> fencing preparation (doc 08)
-   -> signed event -> EventBridge -> case created (CASE_NEW)
+```mermaid
+flowchart LR
+    R["receive<br/>webhook"] --> V["validate sender<br/>binding"] --> N["normalize<br/>text extraction, OCR,<br/>language detect"]
+    N --> H["content hash<br/>+ dedupe check<br/>(TTL per channel)"]
+    H --> P["PII minimization:<br/>vault seal +<br/>redacted working copy"]
+    P --> F["fencing preparation<br/>(doc 08)"]
+    F --> E["signed event<br/>-> EventBridge"]
+    E --> C["case created<br/>state REDACTED"]
+
+    H -.->|"duplicate"| D["return prior bundle ref<br/>DUPLICATE marker, zero spend"]
 ```
 
 Gateway is stateless Lambda behind API Gateway (Telegram webhook, WhatsApp

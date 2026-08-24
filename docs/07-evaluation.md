@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 04-agent-contracts |
@@ -14,6 +14,7 @@
 
 | Version | Change |
 |---|---|
+| 0.2.0 | Harness component listing converted to data-flow Mermaid diagram |
 | 0.1.0 | Initial draft |
 
 ## 1. Philosophy
@@ -114,19 +115,32 @@ signal senior judges screen for.
 
 ## 7. Eval Harness Components (build list for P2/P3)
 
-```
-evaluation/
-  generator/        case synthesizers per stratum (seeded, typed templates)
-  runner/           replays cases through investigator (staging endpoint or local)
-  scorers/          metric computation, Wilson CIs, per-stratum tables
-  regression/       tolerance checks vs baseline metrics.json
-  reports/          markdown + json artifacts committed under docs/eval-results/
-  chaos/            dependency kill switches for degradation-matrix assertions
+Harness components (build list for P2/P3), data flow below:
+
+```mermaid
+flowchart LR
+    subgraph Inputs
+        GEN["generator/<br/>seeded case synthesizers<br/>per stratum, typed templates"]
+        LIVE["soak feed<br/>real household events<br/>labeled by outcomes"]
+    end
+    RUN["runner/<br/>replays cases through investigator<br/>LOCAL_MOCK · STAGING · SHADOW"]
+    CHAOS["chaos/<br/>fault injection matching<br/>doc 03 failure matrix"]
+    SCORE["scorers/<br/>metrics, Wilson CIs<br/>per-stratum confusion tables"]
+    REG["regression/<br/>tolerance gates vs<br/>baseline metrics.json"]
+    REP["reports/<br/>markdown + json artifacts<br/>committed under docs/eval-results/"]
+
+    GEN --> RUN
+    LIVE -.->|"P6 onward"| RUN
+    CHAOS -.wraps.-> RUN
+    RUN --> SCORE --> REG
+    SCORE --> REP
+    REG -->|"fail blocks merge"| CI["CI gate<br/>nightly + release"]
 ```
 
-Runner modes: LOCAL_MOCK (no AWS, mocked tools), STAGING (real models, synthetic
-intel), PRODUCTION_SHADOW (live traffic copy, no notifications). Chaos mode wraps
-any runner with dependency fault injection matching the doc 03 failure matrix.
+Runner modes: LOCAL_MOCK (no AWS, mocked tools and model provider), STAGING
+(real models, synthetic intel, budget-capped), PRODUCTION_SHADOW (live traffic
+copy, no notifications). Chaos mode wraps any runner with dependency fault
+injection matching the doc 03 failure matrix.
 
 ## 8. Acceptance Criteria for This Document
 

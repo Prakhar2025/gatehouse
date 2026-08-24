@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 03-architecture |
@@ -14,6 +14,7 @@
 
 | Version | Change |
 |---|---|
+| 0.2.0 | Replaced ASCII orchestration sketch with Mermaid supervisor topology diagram |
 | 0.1.0 | Initial draft |
 
 ## 0. How to Read This Document
@@ -31,14 +32,34 @@ through the fencing layer defined in doc 08 section 4.
 
 Supervisor pattern implemented with Strands Agent-as-Tool composition:
 
-```
-CaseOrchestrator (code-driven sequence, not free-form LLM routing)
-   |
-   |-- triage_agent          (always)
-   |-- [verify_agent]        (if class >= SCREEN)
-   |-- [graph_agent]         (if class >= SCREEN, parallel with verify)
-   |-- [engage_agent]        (conditional, gray band or conflicting signals)
-   |-- [guardian_agent]      (composes verdict package, always last)
+```mermaid
+flowchart TB
+    CASE["Case event<br/>(from EventBridge)"]
+    ORCH["CaseOrchestrator<br/>deterministic Python sequence<br/>NOT free-form LLM routing"]
+
+    T["triage_agent<br/>always runs · Nova Micro"]
+    V["verify_agent<br/>if class >= SCREEN · Nova Pro"]
+    G["graph_agent<br/>if class >= SCREEN · no model for query path"]
+    E["engage_agent<br/>conditional: gray band 0.40-0.75<br/>or conflicting signals"]
+    GU["guardian_agent<br/>composes verdict package · always last"]
+
+    BUD{{"budget gate<br/>spend breaker check<br/>before every stage"}}
+    FEN{{"fencing layer<br/>content enters fenced<br/>or not at all"}}
+
+    OUT["GuardianPackage<br/>-> evidence bundle -> notification"]
+
+    CASE --> FEN --> ORCH
+    ORCH --> BUD
+    BUD --> T
+    T -->|"NOISE / INFO"| OUT
+    T -->|"SCREEN +"| V
+    T --> G
+    V --> J{"signals conflict?<br/>confidence in gray band?"}
+    G --> J
+    J -->|"yes"| E
+    J -->|"no"| GU
+    E --> GU
+    GU --> OUT
 ```
 
 The orchestrator is deliberately code, not model choice: routing between stages is
