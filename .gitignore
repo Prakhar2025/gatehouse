@@ -10,3 +10,4 @@ node_modules/
 .aws-sam/
 *.db
 .DS_Store
+console/node_modules/
