@@ -245,6 +245,29 @@ section with dates, Sentinel doc style. Prompt-based JSON with fence-stripping
 and jsonschema gate remains the confirmed design; no model on this account
 guarantees native responseFormat JSON.
 
+### 8.1 Live Verification Record (executed 2026-08-24, us-east-1, converse API)
+
+Probed with one capped invocation each (charter budget rules honored):
+
+| Model | Role | Result | Latency |
+|---|---|---|---|
+| amazon.nova-micro-v1:0 | TRIAGE primary | PASS | 616ms warm |
+| amazon.nova-lite-v1:0 | ENGAGE/NARRATIVE primary | PASS | 531ms |
+| amazon.nova-pro-v1:0 | VERIFY primary | PASS | 577ms |
+| zai.glm-4.7-flash | cheap alternate / degraded-mode classifier | PASS | 465 to 513ms |
+| us.meta.llama3-3-70b-instruct-v1:0 | FALLBACK verify | PASS | 1409ms |
+| openai.gpt-oss-120b-1:0 | FALLBACK narrative | PASS (reasoning model: visible text may be empty at low maxTokens, needs >=512 output budget, reasoning blocks parsed separately) | 507ms |
+| amazon.titan-embed-text-v2:0 | claim embeddings | PASS, 1024 dims | 917ms |
+| amazon.nova-2-lite-v1:0 | candidate | FAIL: Invocation not supported in current account/region config; revisit at P4 | - |
+| anthropic.claude-haiku-4-5 | candidate | FAIL: access blocked on builder account (consistent with Sentinel-era finding); Anthropic stays out of all chains | - |
+
+Catalog notes from list_foundation_models (90 text models visible): newer
+generations exist (Nova Premier, Claude Opus/Sonnet 5.x, GPT-5.6 family,
+Kimi K2.5, MiniMax M2.5, Grok 4.6) but are deliberately unused here: they price
+for frontier reasoning we do not need in high-volume screening paths. Cost
+discipline beats model fashion. Re-run this exact probe script at P4 exit and
+append deltas.
+
 ## 9. Production Topology at Scale (documented, not built)
 
 How the design maps past 100k households (shown for architectural credibility,
