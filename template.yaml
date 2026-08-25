@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Gatehouse intake API, investigation handler, and persistence tables
+
+Parameters:
+  Environment:
+    Type: String
+    Default: staging
+    AllowedValues: [staging, prod]
+  TelegramWebhookSecret:
+    Type: String
+    Description: Secret path/header token for Telegram webhook verification
+    NoEcho: true
+  GraphSalt:
+    Type: String
+    Description: HMAC salt for identifier hashing (rotate per environment)
+    NoEcho: true
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 60
+    Environment:
+      Variables:
+        GATEHOUSE_ENVIRONMENT: !Ref Environment
+        GATEHOUSE_TELEGRAM_WEBHOOK_SECRET: !Ref TelegramWebhookSecret
+        GATEHOUSE_GRAPH_SALT: !Ref GraphSalt
+        GATEHOUSE_CASES_TABLE: !Ref CasesTable
+        GATEHOUSE_GRAPH_TABLE: !Ref GraphTable
+        POWERTOOLS_METRICS_NAMESPACE: Gatehouse
+
+Resources:
+  IntakeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub gatehouse-intake-${Environment}
+      Handler: gatehouse.handler.handler
+      CodeUri: .
+      Events:
+        Webhook:
+          Type: HttpApi
+          Properties:
+            Path: /telegram
+            Method: POST
+            ApiId: !Ref HttpApi
+        Health:
+          Type: HttpApi
+          Properties:
+            Path: /health
+            Method: GET
+            ApiId: !Ref HttpApi
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CasesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GraphTable
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: [GET, POST]
+        AllowHeaders: [content-type, x-telegram-bot-api-secret-token]
+
+  CasesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub gatehouse-cases-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  GraphTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub gatehouse-graph-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+Outputs:
+  ApiBase:
+    Description: Webhook base URL
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
