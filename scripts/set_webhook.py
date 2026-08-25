@@ -13,14 +13,15 @@ import json
 import os
 import sys
 import urllib.request
+from typing import Any
 
 
-def _call(token: str, method: str, payload: dict[str, object] | None = None) -> dict[str, object]:
+def _call(token: str, method: str, payload: dict[str, str] | None = None) -> dict[str, Any]:
     url = f"https://api.telegram.org/bot{token}/{method}"
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        out: dict[str, object] = json.loads(resp.read().decode())
+    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - fixed https host
+        out: dict[str, Any] = json.loads(resp.read().decode())
     return out
 
 
@@ -31,7 +32,10 @@ def main(argv: list[str]) -> int:
     token = os.environ.get("GATEHOUSE_TELEGRAM_BOT_TOKEN", "")
     secret = os.environ.get("GATEHOUSE_TELEGRAM_WEBHOOK_SECRET", "")
     if not token or not secret:
-        print("missing GATEHOUSE_TELEGRAM_BOT_TOKEN or GATEHOUSE_TELEGRAM_WEBHOOK_SECRET", file=sys.stderr)
+        print(
+            "missing GATEHOUSE_TELEGRAM_BOT_TOKEN or GATEHOUSE_TELEGRAM_WEBHOOK_SECRET",
+            file=sys.stderr,
+        )
         return 2
     base = argv[1].rstrip("/")
     webhook_url = f"{base}/telegram"
