@@ -1,3 +1,5 @@
-bedrock-agentcore-starter-toolkit>=1.0
+# AWS deployment extras (installed at deploy time, not in CI lock):
+# SAM CLI is installed system-wide (see docs/09); it conflicts with strands
+# on watchdog pins for future python versions, so it stays out of the lock.
+bedrock-agentcore-starter-toolkit>=0.3.12
 opentelemetry-sdk>=1.25
-aws-sam-cli>=1.120

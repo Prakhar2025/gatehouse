@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # --- graph key derivation (doc 06 section 3; HMAC salt) ---
     graph_salt: str = "gatehouse-dev-salt-change-me"
 
+    # --- telegram channel (doc 05 section 2; secrets via env only) ---
+    telegram_webhook_secret: str = ""
+    telegram_bot_token: str = ""
+
     @model_validator(mode="after")
     def _bands_ordered(self) -> Settings:
         """Threshold bands must be monotonic; refuse to boot otherwise."""

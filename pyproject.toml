@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Autonomous fraud-defense agent for households. Nothing harmful gets past the gate."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
 authors = [{ name = "Prakhar Shukla" }]
 dependencies = [
     "pydantic>=2.7",
