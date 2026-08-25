@@ -36,3 +36,17 @@ Root cause: case age used an or-chain over decided_at/created_at/now; a legitima
 Fix: explicit None checks instead of truthiness when reading timestamps from stored records.
 Prevention: epoch timestamps are never truthiness-checked; absence is None, zero is a point in time.
 Phase: channels layer
+
+## [2026-08-25] CI ran a newer ruff than local, missed UP017
+Symptom: CI red on lint step with UP017 use-datetime-utc-alias; local green.
+Root cause: local venv had an older ruff; requirements-lock.txt pins a newer one. Toolchain drift, not a code bug.
+Fix: switched to the datetime.UTC import alias and synced local ruff to the lockfile version. Future drift: make rebase against the lockfile a precondition of "local green equals CI green."
+Prevention: rebuild the venv from requirements-lock.txt when ruff and CI disagree.
+Phase: channels layer
+
+## [2026-08-25] gitleaks action failed because checkout was depth-1
+Symptom: CI red on gitleaks step with "ambiguous revision", but the message also said zero leaks.
+Root cause: actions/checkout defaults to fetch-depth 1, so the parent commit range the action wanted did not exist in the working tree.
+Fix: checkout now uses fetch-depth 0, giving the action the full history it needs. Zero leaks confirmed, not a real finding.
+Prevention: any tool that needs history (gitleaks, blame, bisect) needs fetch-depth 0 in the checkout step.
+Phase: channels layer
