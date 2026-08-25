@@ -52,6 +52,22 @@ class Settings(BaseSettings):
     telegram_webhook_secret: str = ""
     telegram_bot_token: str = ""
 
+    # --- whatsapp channel (doc 05 section 3; disabled until Meta review clears) ---
+    whatsapp_enabled: bool = False
+    whatsapp_verify_token: str = ""
+    whatsapp_app_secret: str = ""
+
+    # --- notification service (doc 05 section 6) ---
+    quiet_hours_enabled: bool = True
+    quiet_hours_utc_offset_minutes: int = Field(default=330, ge=-720, le=840)  # IST default
+    guardian_telegram_chat_id: str = ""
+
+    # --- email channel (doc 05 section 4) ---
+    email_alias_allowlist: str = ""  # comma-separated bound aliases, e.g. "h7k2,k9m4"
+
+    # --- engage agent (doc 04 section 6; opt-in per household) ---
+    engagement_default_opt_in: bool = True
+
     @model_validator(mode="after")
     def _bands_ordered(self) -> Settings:
         """Threshold bands must be monotonic; refuse to boot otherwise."""

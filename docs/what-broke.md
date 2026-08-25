@@ -15,3 +15,17 @@ Root cause: test fake returned {"Attributes": {}} on delete; the real check `boo
 Fix: fake now returns the deleted item as Attributes, matching boto3 ReturnValues=ALL_OLD.
 Prevention: the protocol-level `bool` check is the contract; fakes must mirror real return shapes for every method they implement.
 Phase: channels layer
+
+## [2026-08-25] quiet-hours test fixtures hand-computed epochs wrongly
+Symptom: module-level sanity asserts failed on import; gmtime disagreed with the comment by 15 hours.
+Root cause: UTC timestamps for fixture moments were computed by hand instead of derived from civil time.
+Fix: fixtures built via calendar.timegm over an explicit aware datetime; sanity asserts now prove placement.
+Prevention: never hand-compute epoch values in tests; always construct from civil time and assert the derived hour.
+Phase: channels layer
+
+## [2026-08-25] engagement turns_used counted the opener against the six-turn budget
+Symptom: turn-limit test expected 6 budgeted turns, got 7.
+Root cause: transcript counts every OUT line; doc 04 caps model turns, and the scripted opener (turn 0) is not a model turn.
+Fix: turns_used counts OUT records with turn >= 1; opener excluded by definition at the single exit point.
+Prevention: budget semantics belong next to the counter, documented where the number is produced, not only in the test.
+Phase: channels layer

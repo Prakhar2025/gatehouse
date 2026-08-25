@@ -95,3 +95,31 @@ class GuardianPackage(BaseModel):
     top_evidence: list[str] = Field(default_factory=list)
     recommended_action: str
     degraded_flags: list[str] = Field(default_factory=list)
+
+
+EngagementDirection = Literal["OUT", "IN", "BLOCKED", "MODEL_ERROR"]
+
+
+class EngagementTurnRecord(BaseModel):
+    """One transcript line. Blocked or errored turns persist no scammer text."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    turn: Annotated[int, Field(ge=0)]
+    direction: EngagementDirection
+    text: str = ""
+    firewall: str = "OK"
+
+
+class EngagementResult(BaseModel):
+    """Output of engage_agent for one case (doc 04 section 6)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    case_id: str
+    outcome: str
+    turns_used: Annotated[int, Field(ge=0)]
+    transcript: list[EngagementTurnRecord] = Field(default_factory=list)
+    intent_confidence: Annotated[float, Field(ge=0.0, le=1.0)] = 0.0
+    reason_code: str = ""
+    degraded_flags: list[str] = Field(default_factory=list)

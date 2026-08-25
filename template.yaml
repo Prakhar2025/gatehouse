@@ -15,6 +15,18 @@ Parameters:
     Type: String
     Description: HMAC salt for identifier hashing (rotate per environment)
     NoEcho: true
+  WhatsAppAppSecret:
+    Type: String
+    Description: Meta app secret for x-hub-signature-256 verification
+    NoEcho: true
+  WhatsAppVerifyToken:
+    Type: String
+    Description: Token Meta echoes during subscription handshake
+    NoEcho: true
+  EventBusName:
+    Type: String
+    Default: gatehouse-events
+    Description: Shared intake event bus name (created below)
 
 Globals:
   Function:
@@ -27,6 +39,8 @@ Globals:
         GATEHOUSE_ENVIRONMENT: !Ref Environment
         GATEHOUSE_TELEGRAM_WEBHOOK_SECRET: !Ref TelegramWebhookSecret
         GATEHOUSE_GRAPH_SALT: !Ref GraphSalt
+        GATEHOUSE_WHATSAPP_APP_SECRET: !Ref WhatsAppAppSecret
+        GATEHOUSE_WHATSAPP_VERIFY_TOKEN: !Ref WhatsAppVerifyToken
         GATEHOUSE_CASES_TABLE: !Ref CasesTable
         GATEHOUSE_GRAPH_TABLE: !Ref GraphTable
         POWERTOOLS_METRICS_NAMESPACE: Gatehouse
@@ -51,11 +65,27 @@ Resources:
             Path: /health
             Method: GET
             ApiId: !Ref HttpApi
+        WhatsappWebhook:
+          Type: HttpApi
+          Properties:
+            Path: /whatsapp
+            Method: ANY
+            ApiId: !Ref HttpApi
+        # SES inbound: the receipt rule that targets this function is created at
+        # deploy time against the verified domain (doc 09 section 4); it cannot
+        # be expressed here without account-specific identity state.
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref CasesTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GraphTable
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref EventBusName
+
+  IntakeEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub gatehouse-events-${Environment}
 
   HttpApi:
     Type: AWS::Serverless::HttpApi
@@ -64,7 +94,7 @@ Resources:
       CorsConfiguration:
         AllowOrigins: ['*']
         AllowMethods: [GET, POST]
-        AllowHeaders: [content-type, x-telegram-bot-api-secret-token]
+        AllowHeaders: [content-type, x-telegram-bot-api-secret-token, x-hub-signature-256]
 
   CasesTable:
     Type: AWS::DynamoDB::Table
@@ -112,3 +142,6 @@ Outputs:
   ApiBase:
     Description: Webhook base URL
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+  EventBusArn:
+    Description: Intake event bus for investigation consumers
+    Value: !GetAtt IntakeEventBus.Arn
