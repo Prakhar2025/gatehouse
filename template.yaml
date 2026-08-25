@@ -11,6 +11,13 @@ Parameters:
     Type: String
     Description: Secret path/header token for Telegram webhook verification
     NoEcho: true
+  TelegramBotToken:
+    Type: String
+    Description: Bot token for outbound replies and guardian cards
+    NoEcho: true
+  GuardianChatId:
+    Type: String
+    Description: Guardian-facing Telegram chat id for escalation cards
   GraphSalt:
     Type: String
     Description: HMAC salt for identifier hashing (rotate per environment)
@@ -23,10 +30,6 @@ Parameters:
     Type: String
     Description: Token Meta echoes during subscription handshake
     NoEcho: true
-  EventBusName:
-    Type: String
-    Default: gatehouse-events
-    Description: Shared intake event bus name (created below)
 
 Globals:
   Function:
@@ -37,12 +40,19 @@ Globals:
     Environment:
       Variables:
         GATEHOUSE_ENVIRONMENT: !Ref Environment
+        GATEHOUSE_REGION: !Ref AWS::Region
         GATEHOUSE_TELEGRAM_WEBHOOK_SECRET: !Ref TelegramWebhookSecret
+        GATEHOUSE_TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+        GATEHOUSE_GUARDIAN_TELEGRAM_CHAT_ID: !Ref GuardianChatId
         GATEHOUSE_GRAPH_SALT: !Ref GraphSalt
         GATEHOUSE_WHATSAPP_APP_SECRET: !Ref WhatsAppAppSecret
         GATEHOUSE_WHATSAPP_VERIFY_TOKEN: !Ref WhatsAppVerifyToken
         GATEHOUSE_CASES_TABLE: !Ref CasesTable
         GATEHOUSE_GRAPH_TABLE: !Ref GraphTable
+        GATEHOUSE_CASES_TABLE_NAME: !Sub gatehouse-cases-${Environment}
+        GATEHOUSE_GRAPH_TABLE_NAME: !Sub gatehouse-graph-${Environment}
+        GATEHOUSE_EVENT_BUS_NAME: !Sub gatehouse-events-${Environment}
+        GATEHOUSE_BEDROCK_MODEL_ID: amazon.nova-micro-v1:0
         POWERTOOLS_METRICS_NAMESPACE: Gatehouse
 
 Resources:
@@ -80,7 +90,29 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref GraphTable
         - EventBridgePutEventsPolicy:
-            EventBusName: !Ref EventBusName
+            EventBusName: !Ref IntakeEventBus
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              # Foundation-model ARN carries an empty account by design.
+              Resource: !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0
+
+  DigestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub gatehouse-digest-${Environment}
+      Handler: gatehouse.digest.handler
+      CodeUri: .
+      Events:
+        MorningTick:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref CasesTable
 
   IntakeEventBus:
     Type: AWS::Events::EventBus

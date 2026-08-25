@@ -50,3 +50,24 @@ Root cause: actions/checkout defaults to fetch-depth 1, so the parent commit ran
 Fix: checkout now uses fetch-depth 0, giving the action the full history it needs. Zero leaks confirmed, not a real finding.
 Prevention: any tool that needs history (gitleaks, blame, bisect) needs fetch-depth 0 in the checkout step.
 Phase: channels layer
+
+## [2026-08-25] two-step dedupe reservation flagged every first message as duplicate
+Symptom: caught in review before testing; the provisional-case-id reservation would have returned the just-recorded slot as a hit on the real call.
+Root cause: reserving under a placeholder id and re-recording under the real id treats the second write as a repeat of the first.
+Fix: reserve once under the real case id; the same call atomically answers hit-or-miss.
+Prevention: idempotency reservations must be single-shot under the final identity, never staged through throwaway keys.
+Phase: channels layer
+
+## [2026-08-25] aware-datetime epoch fixtures drifted by the UTC offset again
+Symptom: quiet-hours fixture sanity assert failed; 15:00 IST read back as 20:30.
+Root cause: calendar.timegm over dt.timetuple() ignores the tzinfo offset; naive wall time was hashed as if UTC.
+Fix: utctimetuple() for aware datetimes; sanity asserts prove the derived local hour.
+Prevention: this ledger already had this rule; recurrence proves hand-built epochs stay dangerous. Builders must derive from civil time via utctimetuple only.
+Phase: channels layer
+
+## [2026-08-25] uv-managed venv has no pip module; Docker off on this host
+Symptom: build script calling `.venv/Scripts/python.exe -m pip` failed; docker daemon not running for sam build containers.
+Root cause: environment uses uv, not pip; container builds need Docker Desktop started.
+Fix: layer assembly via `uv pip install --target --python-platform aarch64-unknown-linux-gnu --only-binary`, source zip via shutil.make_archive with Windows-native paths (pwd -W).
+Prevention: packaging scripts target uv semantics on this host; no-Docker Lambda packaging documented in docs/deploy-lambda.md.
+Phase: channels layer

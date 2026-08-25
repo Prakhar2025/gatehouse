@@ -5,12 +5,14 @@ Deployment shape (docs/09 section 2):
 - Bedrock invoked in-region via the routing table (doc 03 section 8.1)
 - Spend meter enforced per case; breaker counters live in DynamoDB (P4+)
 
-Cold-start discipline: settings and clients are cached at module scope so warm
-invocations reuse them. Secrets arrive via environment (SSM at deploy time).
+Cold-start discipline: settings, stores, and clients are cached at module scope
+so warm invocations reuse them (see gatehouse.runtime). Secrets arrive via
+environment (SSM at deploy time).
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from typing import Any
@@ -30,33 +32,43 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _response(status: int, body: dict[str, Any]) -> dict[str, Any]:
+    return {"statusCode": status, "body": json.dumps(body)}
+
+
 def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Direct Lambda entry for webhook events (non-HTTP API deployments).
 
     Kept alongside the Mangum handler so SAM can switch route styles without
-    code changes. Verifies the Telegram secret before any parsing.
+    code changes. Verifies the Telegram secret before any parsing, then runs
+    the live loop synchronously inside the invocation budget.
     """
     from gatehouse.channels.telegram import (
         WebhookError,
-        build_reply_verdict,
         parse_update,
         verify_secret,
     )
     from gatehouse.config import get_settings
+    from gatehouse.runtime import handle_telegram_signal
 
     settings = get_settings()
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     try:
         verify_secret(headers.get("x-telegram-bot-api-secret-token"), settings)
         body = json.loads(event.get("body") or "{}")
-        # Parse validates the update shape; the signal object is consumed by
-        # the async investigation path wired in P4.
-        parse_update(body)
+        signal = parse_update(body)
     except (WebhookError, json.JSONDecodeError) as exc:
-        return {"statusCode": 401, "body": json.dumps({"error": str(exc)})}
+        return _response(401, {"error": str(exc)})
 
-    # Full investigation runs here in P4's async path; the intake contract and
-    # reply tone are already production code (tested), verdict is placeholder
-    # until Bedrock wiring is enabled by the deploy flag.
-    reply = build_reply_verdict("SUSPICIOUS", ["INTAKE_ACK"])
-    return {"statusCode": 200, "body": json.dumps({"ok": True, "reply": reply})}
+    outcome = asyncio.run(handle_telegram_signal(signal))
+    # Always 200 post-verification: Telegram retries non-2xx deliveries and
+    # refusal is an answer, not a transport failure.
+    return _response(
+        200,
+        {
+            "ok": True,
+            "reply": outcome.reply_text,
+            "status": outcome.status,
+            "case_id": outcome.case_id,
+        },
+    )

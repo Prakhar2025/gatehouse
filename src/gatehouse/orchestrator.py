@@ -14,6 +14,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from gatehouse.agents.guardian import compose_package
+from gatehouse.agents.schemas import (
+    GraphFinding,
+    GuardianPackage,
+    TriageResult,
+    VerificationFinding,
+)
 from gatehouse.agents.triage import run_triage
 from gatehouse.agents.verify import verify_signal
 from gatehouse.config import Settings, get_settings
@@ -38,6 +44,12 @@ class CaseResult:
     degraded_flags: list[str]
     spend_usd: float
     canary: str
+    # Intermediate artifacts, carried so the evidence bundle builder does not
+    # need to re-run any stage. Default None keeps existing callers working.
+    triage_result: TriageResult | None = None
+    verify_findings: list[VerificationFinding] | None = None
+    graph_finding: GraphFinding | None = None
+    package: GuardianPackage | None = None
 
 
 async def investigate(
@@ -96,4 +108,8 @@ async def investigate(
         degraded_flags=package.degraded_flags,
         spend_usd=meter.total_usd,
         canary=fenced.canary,
+        triage_result=triage,
+        verify_findings=list(verify_out.findings),
+        graph_finding=graph,
+        package=package,
     )

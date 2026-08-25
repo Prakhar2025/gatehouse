@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     # --- engage agent (doc 04 section 6; opt-in per household) ---
     engagement_default_opt_in: bool = True
 
+    # --- live deployment wiring (doc 09 section 2) ---
+    cases_table_name: str = "gatehouse-cases-staging"
+    graph_table_name: str = "gatehouse-graph-staging"
+    event_bus_name: str = "gatehouse-events-staging"
+    bedrock_model_id: str = "amazon.nova-micro-v1:0"
+
     @model_validator(mode="after")
     def _bands_ordered(self) -> Settings:
         """Threshold bands must be monotonic; refuse to boot otherwise."""

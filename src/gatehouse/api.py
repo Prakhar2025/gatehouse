@@ -21,7 +21,6 @@ from gatehouse.channels.email import EmailIntakeError, parse_receipt_event
 from gatehouse.channels.events import GatewayEvent, build_envelope, content_hash
 from gatehouse.channels.telegram import (
     WebhookError,
-    build_reply_verdict,
     parse_update,
     verify_secret,
 )
@@ -37,6 +36,7 @@ from gatehouse.channels.whatsapp import (
 )
 from gatehouse.config import get_settings
 from gatehouse.logging_utils import configure_logging, get_logger
+from gatehouse.runtime import handle_email_signal, handle_telegram_signal
 
 configure_logging()
 log = get_logger("gatehouse.api")
@@ -61,21 +61,26 @@ async def telegram_webhook(request: Request) -> JSONResponse:
         log.warning("webhook_rejected", extra={"extra_fields": {"reason": str(exc)}})
         return JSONResponse(status_code=401, content={"error": "rejected"})
 
-    # Pipeline invocation is wired in the deployment layer (P4); the intake
-    # contract is fully validated here so the wire format is frozen early.
+    # Live loop: binding check, dedupe, investigation, bundle, escalation.
+    # Always 200 from here: Telegram retries non-2xx webhooks, and refusal
+    # (unlinked sender) is a delivered answer, not a transport failure.
+    outcome = await handle_telegram_signal(signal)
     log.info(
-        "signal_accepted",
+        "signal_processed",
         extra={
             "extra_fields": {
                 "update_id": signal.update_id,
-                "chat_id": signal.chat_id,
-                "is_forward": signal.is_forward,
-                "length": len(signal.text),
+                "status": outcome.status,
+                "case_id": outcome.case_id,
+                "verdict": outcome.verdict,
+                "latency_ms": int(outcome.latency_s * 1000),
             }
         },
     )
-    reply = build_reply_verdict("SUSPICIOUS", ["INTAKE_ACK"])  # placeholder verdict path
-    return JSONResponse(status_code=200, content={"ok": True, "reply": reply})
+    return JSONResponse(
+        status_code=200,
+        content={"ok": True, "reply": outcome.reply_text},
+    )
 
 
 @app.get("/whatsapp")
@@ -133,7 +138,7 @@ async def whatsapp_webhook(request: Request) -> JSONResponse:
                 }
             },
         )
-    reply = whatsapp_reply("SUSPICIOUS")  # placeholder verdict path
+    reply = whatsapp_reply("SUSPICIOUS")  # placeholder verdict path (flag-gated off)
     return JSONResponse(
         status_code=200, content={"ok": True, "signals": len(signals), "reply": reply}
     )
@@ -166,13 +171,20 @@ async def email_intake(request: Request) -> JSONResponse:
     if signal.recipient_alias not in allowed_aliases:
         log.warning("email_unknown_alias", extra={"extra_fields": {"reason": "alias_not_bound"}})
         return JSONResponse(status_code=404, content={"error": "unknown alias"})
+    outcome = await handle_email_signal(
+        alias=signal.recipient_alias,
+        sender=signal.sender,
+        text=signal.text,
+        message_id=signal.message_id,
+    )
     log.info(
-        "signal_accepted",
+        "email_signal_processed",
         extra={
             "extra_fields": {
-                "channel": "email",
                 "message_id": signal.message_id,
                 "event_id_hash": content_hash(envelope["event_id"]),
+                "status": outcome.status,
+                "case_id": outcome.case_id,
             }
         },
     )
