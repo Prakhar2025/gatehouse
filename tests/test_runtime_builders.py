@@ -166,8 +166,12 @@ class TestStagePrefixStripping:
 
         import gatehouse.handler as h
 
+        event: dict[str, Any] = {
+            "rawPath": raw_path,
+            "requestContext": {"http": {"path": ctx_path or raw_path}},
+        }
         with patch.object(h, "_mangum", fake_mangum):
-            out = h.handler({"rawPath": raw_path}, None)
+            out = h.handler(event, None)
         assert out == {"statusCode": 200}
         return captured
 
