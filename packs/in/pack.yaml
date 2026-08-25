@@ -1,0 +1,118 @@
+# Gatehouse country pack: India v0.1.0
+# Seed data from public advisories (RBI, I4C, bank official domains).
+# Community-extensible; schema-validated in CI; pinned per case in bundles.
+region: in
+version: 0.1.0
+languages: [en, hi]
+
+scoring:
+  strong_phrase: 0.45
+  moderate_phrase: 0.30
+  weak_phrase: 0.15
+  payment_intent_bonus: 0.20
+  url_present_bonus: 0.15
+
+issuers:
+  - id: sbi
+    name: State Bank of India
+    official_domains: [sbi.co.in, onlinesbi.sbi, bank.sbi]
+    sms_sender_ids: [SBIBNK, SBIINB, SBICRD]
+  - id: hdfc
+    name: HDFC Bank
+    official_domains: [hdfcbank.com, hdfc.com]
+    sms_sender_ids: [HDFCBK, HDFCBK]
+  - id: icici
+    name: ICICI Bank
+    official_domains: [icicibank.com]
+    sms_sender_ids: [ICICIB, ICICIBANK]
+  - id: axis
+    name: Axis Bank
+    official_domains: [axisbank.com]
+    sms_sender_ids: [AXISBK, AXISCBL]
+  - id: pnb
+    name: Punjab National Bank
+    official_domains: [pnbindia.in]
+    sms_sender_ids: [PNBNK]
+  - id: rbi
+    name: Reserve Bank of India
+    official_domains: [rbi.org.in]
+    sms_sender_ids: [RBISAY]
+  - id: npci
+    name: National Payments Corporation of India
+    official_domains: [npci.org.in, upi.org.in]
+    sms_sender_ids: []
+
+rails:
+  - id: upi
+    display_name: UPI
+    vpa_pattern: '^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$'
+    collect_request_fields: [payee_vpa, payee_name, amount, note]
+
+lexicons:
+  - lang: en
+    strong:
+      - "kyc expired"
+      - "kyc has expired"
+      - "kyc expires"
+      - "kyc will expire"
+      - "account will be blocked"
+      - "account has been blocked"
+      - "digital arrest"
+      - "verify your account immediately"
+      - "re-kyc required today"
+      - "click to avoid suspension"
+      - "your sim will be deactivated"
+      - "parcel held at customs"
+      - "lottery winner"
+      - "you have won"
+      - "claim your prize"
+    moderate:
+      - "update your kyc"
+      - "complete your kyc"
+      - "urgent action required"
+      - "suspicious activity detected"
+      - "unusual login attempt"
+      - "investment opportunity"
+      - "guaranteed returns"
+      - "guaranteed profit"
+      - "limited slots"
+      - "slots left"
+      - "processing fee"
+      - "send money to receive"
+      - "pay joining fee"
+      - "stay on video call"
+      - "avoid arrest"
+      - "money laundering"
+      - "involved in"
+      - "deposit immediately"
+      - "won the"
+      - "lucky draw winner"
+    weak:
+      - "offer expires soon"
+      - "act now"
+      - "exclusive deal"
+      - "reward points expiring"
+  - lang: hi
+    strong:
+      - "केवाईसी समाप्त"
+      - "खाता बंद हो जाएगा"
+      - "डिजिटल अरेस्ट"
+      - "तुरंत सत्यापित करें"
+      - "आपने लॉटरी जीती है"
+      - "इनाम का दावा करें"
+      - "गिरफ्तारी से बचने"
+      - "मनी लॉन्ड्रिंग"
+    moderate:
+      - "केवाईसी अपडेट करें"
+      - "आवश्यक कार्रवाई"
+      - "गारंटीड रिटर्न"
+      - "प्रोसेसिंग फीस"
+      - "पैसे भेजें"
+      - "जुर्माना भरें"
+      - "सीमित स्लॉट"
+      - "ज्वाइनिंग फीस"
+      - "कर जमा"
+      - "दावा करें"
+    weak:
+      - "ऑफर जल्द समाप्त"
+      - "अभी करें"
