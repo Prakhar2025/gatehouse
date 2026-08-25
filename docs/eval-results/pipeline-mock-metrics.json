@@ -1,0 +1,95 @@
+{
+  "cases": 37,
+  "false_gate_rate": 0.0,
+  "fn": 1,
+  "fp": 0,
+  "noise_leak_rate": 0.0,
+  "per_stratum": [
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 6,
+      "stratum": "kyc_scam",
+      "tn": 0,
+      "tp": 6
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 6,
+      "stratum": "digital_arrest",
+      "tn": 0,
+      "tp": 6
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 6,
+      "stratum": "investment",
+      "tn": 0,
+      "tp": 6
+    },
+    {
+      "fn": 1,
+      "fp": 0,
+      "n": 6,
+      "stratum": "lottery",
+      "tn": 0,
+      "tp": 5
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 3,
+      "stratum": "legit_bank_offer",
+      "tn": 3,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 3,
+      "stratum": "delivery_update",
+      "tn": 3,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 3,
+      "stratum": "family_chatter",
+      "tn": 3,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 3,
+      "stratum": "otp_forward",
+      "tn": 3,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 1,
+      "stratum": "govt_legit_trap",
+      "tn": 1,
+      "tp": 0
+    }
+  ],
+  "precision": 1.0,
+  "precision_ci": [
+    0.8569,
+    1.0
+  ],
+  "recall": 0.9583,
+  "recall_ci": [
+    0.7976,
+    0.9926
+  ],
+  "runner": "pipeline-mock-v0",
+  "seed": 42,
+  "tn": 13,
+  "tp": 23
+}
