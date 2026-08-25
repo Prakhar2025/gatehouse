@@ -65,3 +65,17 @@ Root cause: seed lexicons lacked common phrasings (money laundering, slots left,
 Fix: India pack v0.1.0 lexicons extended; pack version stays 0.1.0 until owner review locks it.
 Prevention: every future miss must end as either a pack phrase or a labeled harness limitation, never silence.
 Phase: foundation build
+
+## [2026-08-25] graph store learned but pipeline never asked
+Symptom: repeat-scammer test failed; verdict stayed SAFE for an identifier seen in a prior scam case.
+Root cause: orchestrator queried the store but never committed the current case's identifiers, and guardian policy ignored graph history entirely.
+Fix: orchestrator upserts identifiers (taint from triage class) before querying; guardian escalates to SUSPICIOUS on tainted repeat identifiers or 3+ prior events (mass-targeting shape).
+Prevention: test_graph_memory_across_cases pins the cross-case learning contract permanently.
+Phase: agent layer
+
+## [2026-08-25] issuer registry lacked short names
+Symptom: bank-claim-vs-fake-link check missed "SBI" texts; only full legal names matched.
+Root cause: Issuer schema had name only; scam texts use short aliases.
+Fix: aliases list added to schema and India pack; verify matches name or alias.
+Prevention: test_bank_name_with_foreign_link_fails covers the alias path.
+Phase: agent layer
