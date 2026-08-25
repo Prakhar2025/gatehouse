@@ -82,6 +82,15 @@ def parse_update(payload: dict[str, Any]) -> InboundSignal:
     )
 
 
+def is_panic_request(text: str) -> bool:
+    """True when a member explicitly fires the /panic keyword.
+
+    Strict match on the command form only: the word 'panic' alone must never
+    escalate anyone's evening.
+    """
+    return text.strip().lower().startswith("/panic")
+
+
 def build_reply_verdict(package_verdict: str, reason_codes: list[str]) -> str:
     """Member-facing reply text. Guardian-facing cards come via the console.
 

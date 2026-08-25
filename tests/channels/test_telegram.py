@@ -8,6 +8,7 @@ from gatehouse.channels.telegram import (
     InboundSignal,
     WebhookError,
     build_reply_verdict,
+    is_panic_request,
     parse_update,
     verify_secret,
 )
@@ -98,6 +99,21 @@ class TestParseUpdate:
         payload["message"] = message
         sig = parse_update(payload)
         assert len(sig.text) == 4000
+
+
+class TestPanicDetection:
+    def test_command_form_detected(self) -> None:
+        assert is_panic_request("/panic") is True
+        assert is_panic_request("  /PANIC  ") is True
+        assert is_panic_request("/panic someone is forcing me to pay") is True
+
+    def test_plain_word_never_triggers(self) -> None:
+        assert is_panic_request("I am in a panic, help") is False
+        assert is_panic_request("dont panic") is False
+        assert is_panic_request("") is False
+
+    def test_other_commands_not_panic(self) -> None:
+        assert is_panic_request("/start") is False
 
 
 class TestReplyTone:

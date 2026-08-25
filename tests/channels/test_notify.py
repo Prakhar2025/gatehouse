@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -39,7 +39,7 @@ def _card(urgency: str = "DECISION", case_id: str = "case-1") -> EscalationCard:
 
 # Fixtures built from civil time, never hand-computed epochs.
 def _utc_ts(hour: int, minute: int = 0) -> float:
-    return float(timegm(datetime(2026, 8, 25, hour, minute, tzinfo=timezone.utc).timetuple()))
+    return float(timegm(datetime(2026, 8, 25, hour, minute, tzinfo=UTC).timetuple()))
 
 
 _QUIET_TS = _utc_ts(23, 30)  # 23:30 UTC == 05:00 IST next day (inside 22-07)

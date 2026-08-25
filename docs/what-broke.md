@@ -29,3 +29,10 @@ Root cause: transcript counts every OUT line; doc 04 caps model turns, and the s
 Fix: turns_used counts OUT records with turn >= 1; opener excluded by definition at the single exit point.
 Prevention: budget semantics belong next to the counter, documented where the number is produced, not only in the test.
 Phase: channels layer
+
+## [2026-08-25] callback expiry math treated timestamp 0.0 as missing
+Symptom: expired-callback test got outcome applied instead of expired.
+Root cause: case age used an or-chain over decided_at/created_at/now; a legitimate created_at of 0.0 is falsy and fell through to now, making every case brand new.
+Fix: explicit None checks instead of truthiness when reading timestamps from stored records.
+Prevention: epoch timestamps are never truthiness-checked; absence is None, zero is a point in time.
+Phase: channels layer
