@@ -56,12 +56,26 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: Gatehouse
 
 Resources:
+  DepsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub gatehouse-deps-${Environment}
+      ContentUri: build/lambda-layer.zip
+      CompatibleRuntimes:
+        - python3.12
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: python3.12
+
   IntakeFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub gatehouse-intake-${Environment}
       Handler: gatehouse.handler.handler
-      CodeUri: .
+      CodeUri: build/lambda-src.zip
+      Layers:
+        - !Ref DepsLayer
       Events:
         Webhook:
           Type: HttpApi
@@ -104,7 +118,9 @@ Resources:
     Properties:
       FunctionName: !Sub gatehouse-digest-${Environment}
       Handler: gatehouse.digest.handler
-      CodeUri: .
+      CodeUri: build/lambda-src.zip
+      Layers:
+        - !Ref DepsLayer
       Events:
         MorningTick:
           Type: Schedule

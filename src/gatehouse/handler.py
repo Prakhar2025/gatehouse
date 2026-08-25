@@ -22,7 +22,30 @@ from mangum import Mangum
 from gatehouse.api import app
 
 # Mangum wraps ASGI for Lambda; API Gateway HTTP API payload v2.
-handler = Mangum(app, lifespan="off", api_gateway_base_path="/")
+_mangum = Mangum(app, lifespan="off", api_gateway_base_path="/")
+
+
+def _strip_stage_prefix(event: dict[str, Any]) -> dict[str, Any]:
+    """Remove the stage segment from rawPath for named HTTP API stages.
+
+    A named stage (e.g. staging) delivers rawPath as /staging/health while
+    routes are registered at /health. The stage name equals the deployment
+    environment, so the same code works unstripped in local dev servers.
+    """
+    stage = os.environ.get("GATEHOUSE_ENVIRONMENT", "")
+    raw_path = event.get("rawPath") if isinstance(event, dict) else None
+    if stage and isinstance(raw_path, str):
+        prefix = f"/{stage}"
+        if raw_path == prefix:
+            event["rawPath"] = "/"
+        elif raw_path.startswith(prefix + "/"):
+            event["rawPath"] = raw_path[len(prefix) :]
+    return event
+
+
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    """HTTP API entrypoint with stage-aware path resolution."""
+    return _mangum(_strip_stage_prefix(event), context)
 
 
 def _env_int(name: str, default: int) -> int:

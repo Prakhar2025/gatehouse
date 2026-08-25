@@ -149,3 +149,43 @@ class TestPipelineSpendAccounting:
         assert outcome.status == "investigated"
         # Rules-only path spends nothing; the meter proves the breaker wiring.
         assert meter.total_usd == outcome.spend_usd
+
+
+class TestStagePrefixStripping:
+    """Named HTTP API stages deliver /stage/... rawPath; routes live at /."""
+
+    def _invoke(self, stage: str, raw_path: str) -> dict[str, Any]:
+        from unittest.mock import patch
+
+        captured: dict[str, Any] = {}
+
+        def fake_mangum(event: dict[str, Any], context: Any) -> dict[str, Any]:
+            captured["raw_path"] = event["rawPath"]
+            return {"statusCode": 200}
+
+        import gatehouse.handler as h
+
+        with patch.object(h, "_mangum", fake_mangum):
+            out = h.handler({"rawPath": raw_path}, None)
+        assert out == {"statusCode": 200}
+        return captured
+
+    def test_staging_stage_prefix_removed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "staging")
+        result = self._invoke("staging", "/staging/health")
+        assert result["raw_path"] == "/health"
+
+    def test_prod_stage_prefix_removed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "prod")
+        result = self._invoke("prod", "/prod/telegram")
+        assert result["raw_path"] == "/telegram"
+
+    def test_local_leaves_paths_alone(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "local")
+        result = self._invoke("local", "/health")
+        assert result["raw_path"] == "/health"
+
+    def test_exact_stage_root_maps_to_slash(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "staging")
+        result = self._invoke("staging", "/staging")
+        assert result["raw_path"] == "/"
