@@ -26,20 +26,33 @@ _mangum = Mangum(app, lifespan="off", api_gateway_base_path="/")
 
 
 def _strip_stage_prefix(event: dict[str, Any]) -> dict[str, Any]:
-    """Remove the stage segment from rawPath for named HTTP API stages.
+    """Remove the stage segment from the request path for named HTTP stages.
 
-    A named stage (e.g. staging) delivers rawPath as /staging/health while
-    routes are registered at /health. The stage name equals the deployment
-    environment, so the same code works unstripped in local dev servers.
+    A named stage (e.g. staging) delivers /staging/health while routes are
+    registered at /health. Mangum resolves the ASGI path from
+    requestContext.http.path, so both that field and rawPath are rewritten.
+    The stage name equals the deployment environment; local dev servers are
+    unaffected because they never carry the prefix.
     """
     stage = os.environ.get("GATEHOUSE_ENVIRONMENT", "")
-    raw_path = event.get("rawPath") if isinstance(event, dict) else None
-    if stage and isinstance(raw_path, str):
-        prefix = f"/{stage}"
+    if not stage:
+        return event
+    prefix = f"/{stage}"
+    raw_path = event.get("rawPath")
+    if isinstance(raw_path, str):
         if raw_path == prefix:
             event["rawPath"] = "/"
         elif raw_path.startswith(prefix + "/"):
             event["rawPath"] = raw_path[len(prefix) :]
+    ctx = event.get("requestContext")
+    http = ctx.get("http") if isinstance(ctx, dict) else None
+    if isinstance(http, dict):
+        path = http.get("path")
+        if isinstance(path, str):
+            if path == prefix:
+                http["path"] = "/"
+            elif path.startswith(prefix + "/"):
+                http["path"] = path[len(prefix) :]
     return event
 
 

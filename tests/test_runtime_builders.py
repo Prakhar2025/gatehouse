@@ -152,15 +152,16 @@ class TestPipelineSpendAccounting:
 
 
 class TestStagePrefixStripping:
-    """Named HTTP API stages deliver /stage/... rawPath; routes live at /."""
+    """Named HTTP API stages deliver /stage/... paths; routes live at /."""
 
-    def _invoke(self, stage: str, raw_path: str) -> dict[str, Any]:
+    def _invoke(self, raw_path: str, ctx_path: str | None = None) -> dict[str, Any]:
         from unittest.mock import patch
 
         captured: dict[str, Any] = {}
 
         def fake_mangum(event: dict[str, Any], context: Any) -> dict[str, Any]:
             captured["raw_path"] = event["rawPath"]
+            captured["ctx_path"] = event.get("requestContext", {}).get("http", {}).get("path")
             return {"statusCode": 200}
 
         import gatehouse.handler as h
@@ -172,20 +173,24 @@ class TestStagePrefixStripping:
 
     def test_staging_stage_prefix_removed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "staging")
-        result = self._invoke("staging", "/staging/health")
+        result = self._invoke("/staging/health", "/staging/health")
         assert result["raw_path"] == "/health"
+        assert result["ctx_path"] == "/health"
 
     def test_prod_stage_prefix_removed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "prod")
-        result = self._invoke("prod", "/prod/telegram")
+        result = self._invoke("/prod/telegram", "/prod/telegram")
         assert result["raw_path"] == "/telegram"
+        assert result["ctx_path"] == "/telegram"
 
     def test_local_leaves_paths_alone(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "local")
-        result = self._invoke("local", "/health")
+        result = self._invoke("/health", "/health")
         assert result["raw_path"] == "/health"
+        assert result["ctx_path"] == "/health"
 
     def test_exact_stage_root_maps_to_slash(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GATEHOUSE_ENVIRONMENT", "staging")
-        result = self._invoke("staging", "/staging")
+        result = self._invoke("/staging", "/staging/")
         assert result["raw_path"] == "/"
+        assert result["ctx_path"] == "/"
