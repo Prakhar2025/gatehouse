@@ -106,6 +106,19 @@ def is_panic_request(text: str) -> bool:
     return text.strip().lower().startswith("/panic")
 
 
+def parse_start_command(text: str) -> str | None:
+    """Extract the invite code from '/start ABC123', else None.
+
+    The only command an unlinked chat may send. Case-insensitive on the
+    command word; the code itself stays as typed since the alphabet is
+    uppercase-only by construction and lookup is exact.
+    """
+    parts = text.strip().split()
+    if len(parts) == 2 and parts[0].lower() == "/start":
+        return parts[1]
+    return None
+
+
 def build_reply_verdict(package_verdict: str, reason_codes: list[str]) -> str:
     """Member-facing reply text. Guardian-facing cards come via the console.
 

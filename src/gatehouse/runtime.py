@@ -23,10 +23,11 @@ from pathlib import Path
 from typing import Any
 
 from gatehouse.channels.binding import (
-    Binding,
+    AlreadyLinkedError,
     BindingStore,
     DynamoBindingStore,
     InMemoryBindingStore,
+    InviteError,
     UnlinkedSenderError,
     verify_sender,
 )
@@ -450,8 +451,48 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
     """Telegram update -> binding check -> live loop. Refusal never spends."""
     rt = get_runtime(settings)
     started = time.perf_counter()
+
+    # 0) /start CODE binds the chat to a household (doc 05 section 2).
+    # Handled before the linked-chat check because binding is the one thing
+    # an unlinked chat must be able to do. Never spends, never investigates.
+    from gatehouse.channels.telegram import parse_start_command
+
+    start = parse_start_command(signal.text)
+    if start is not None:
+        try:
+            binding = rt.bindings.consume_invite(start, "telegram", str(signal.chat_id))
+        except InviteError:
+            return PipelineOutcome(
+                status="refused",
+                reply_text=(
+                    "That invite code is invalid or expired. "
+                    "Ask your family guardian for a fresh code."
+                ),
+                latency_s=time.perf_counter() - started,
+            )
+        except AlreadyLinkedError:
+            return PipelineOutcome(
+                status="refused",
+                reply_text=(
+                    "This chat is already linked to a Gatehouse household. "
+                    "Forward something anytime and it gets checked."
+                ),
+                latency_s=time.perf_counter() - started,
+            )
+        return PipelineOutcome(
+            status="bound",
+            reply_text=(
+                f"Linked. This chat now belongs to {binding.household_id}. "
+                "Forward any message that feels risky and Gatehouse checks it."
+            ),
+            case_id=None,
+            household_id=binding.household_id,
+            latency_s=time.perf_counter() - started,
+        )
+
     try:
-        binding: Binding = verify_sender(rt.bindings, "telegram", str(signal.chat_id))
+        # Type comes from the consume_invite call above; same Binding shape.
+        binding = verify_sender(rt.bindings, "telegram", str(signal.chat_id))
     except UnlinkedSenderError:
         return PipelineOutcome(
             status="refused",

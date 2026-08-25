@@ -294,3 +294,44 @@ class TestDuplicateBudgetProtection:
         bundle = rt.bundles.latest(HH1, str(first.case_id))
         assert bundle is not None
         assert bundle.revision == 1
+
+
+class TestStartBinding:
+    """Matrix row support (doc 05 s2): the /start CODE binding flow."""
+
+    def test_bound_chat_forwards_get_investigated(self, rt: Any) -> None:
+        invite = rt.bindings.issue_invite(HH1)
+        outcome: PipelineOutcome = go(
+            handle_telegram_signal(tg_signal(f"/start {invite.code}", chat_id=42))
+        )
+        assert outcome.status == "bound"
+        assert outcome.household_id == HH1
+        # The same chat is now a full member of the loop.
+        rt.model = scam_model()
+        fwd: PipelineOutcome = go(
+            handle_telegram_signal(tg_signal(SCAM_TEXT, chat_id=42, update_id=2))
+        )
+        assert fwd.status == "investigated"
+        assert fwd.verdict == "SCAM"
+
+    def test_bad_code_refused_without_binding(self, rt: Any) -> None:
+        outcome: PipelineOutcome = go(
+            handle_telegram_signal(tg_signal("/start BOGUS99", chat_id=43))
+        )
+        assert outcome.status == "refused"
+        assert rt.bindings.lookup("telegram", "43") is None
+
+    def test_already_linked_chat_gets_friendly_refusal(self, rt: Any) -> None:
+        invite_a = rt.bindings.issue_invite(HH1)
+        go(handle_telegram_signal(tg_signal(f"/start {invite_a.code}", chat_id=44)))
+        invite_b = rt.bindings.issue_invite("household-two")
+        second: PipelineOutcome = go(
+            handle_telegram_signal(tg_signal(f"/start {invite_b.code}", chat_id=44))
+        )
+        assert second.status == "refused"
+        assert rt.bindings.lookup("telegram", "44") is not None
+
+    def test_plain_start_without_code_is_not_binding(self, rt: Any) -> None:
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal("/start", chat_id=45)))
+        assert outcome.status == "refused"
+        assert rt.bindings.lookup("telegram", "45") is None
