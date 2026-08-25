@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Deploy the staging stack without leaking parameter values.
 
-Loads .env.deploy from the repo root, runs `sam deploy` with
+Loads .env.deploy from the repo root, falling back to .env so only one
+environment file needs maintaining. Runs `sam deploy` with
 --parameter-overrides, and scrubs any secret value from captured output
 before printing. Exit code mirrors sam's.
 """
@@ -14,14 +15,16 @@ import sys
 
 SAM = r"C:\PROGRA~1\Amazon\AWSSAMCLI\bin\sam.cmd"
 ENV_FILE = pathlib.Path(__file__).resolve().parents[1] / ".env.deploy"
+FALLBACK_ENV_FILE = pathlib.Path(__file__).resolve().parents[1] / ".env"
 
 
 def main() -> int:
-    if not ENV_FILE.exists():
-        print("missing .env.deploy", file=sys.stderr)
+    env_path = ENV_FILE if ENV_FILE.exists() else FALLBACK_ENV_FILE
+    if not env_path.exists():
+        print("missing .env.deploy (or .env)", file=sys.stderr)
         return 2
     vals: dict[str, str] = {}
-    for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
+    for line in env_path.read_text(encoding="utf-8").splitlines():
         if "=" in line:
             k, v = line.split("=", 1)
             vals[k.strip()] = v.strip()
