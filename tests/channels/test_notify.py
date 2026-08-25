@@ -93,8 +93,10 @@ class TestEscalationRouting:
 
     def test_missing_guardian_chat_raises(self) -> None:
         svc = NotificationService(LoggingNotifier())
+        # Awake-hour timestamp: a default wall-clock read can land inside
+        # quiet hours, where the card queues before the guard ever fires.
         with pytest.raises(NotificationError):
-            svc.escalate(_card(), _settings(guardian_telegram_chat_id=""))
+            svc.escalate(_card(), _settings(guardian_telegram_chat_id=""), now=_AWAKE_TS)
 
 
 class TestDigestFallback:

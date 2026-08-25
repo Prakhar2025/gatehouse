@@ -71,3 +71,10 @@ Root cause: environment uses uv, not pip; container builds need Docker Desktop s
 Fix: layer assembly via `uv pip install --target --python-platform aarch64-unknown-linux-gnu --only-binary`, source zip via shutil.make_archive with Windows-native paths (pwd -W).
 Prevention: packaging scripts target uv semantics on this host; no-Docker Lambda packaging documented in docs/deploy-lambda.md.
 Phase: channels layer
+
+## [2026-08-25] missing-guardian-chat test passed by day and failed by night
+Symptom: test_missing_guardian_chat_raises went red on an evening run with DID NOT RAISE NotificationError.
+Root cause: escalate() defaults to the real wall clock; inside quiet hours (22:00 to 07:00 local, IST offset) a DECISION card queues into the digest before the guardian-chat guard ever fires, so nothing raises.
+Fix: injected the awake-hour fixture timestamp like every sibling test; the guard is now exercised regardless of when the suite runs.
+Prevention: assertions about routing must pin the clock explicitly; wall-clock defaults make tests time-of-day dependent, same failure family as the epoch fixtures rule already in this ledger.
+Phase: channels layer
