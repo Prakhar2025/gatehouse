@@ -79,3 +79,10 @@ Root cause: Issuer schema had name only; scam texts use short aliases.
 Fix: aliases list added to schema and India pack; verify matches name or alias.
 Prevention: test_bank_name_with_foreign_link_fails covers the alias path.
 Phase: agent layer
+
+## [2026-08-25] lockfile carried dev-only AWS tooling into CI
+Symptom: heavy universal lockfile churn around the channels-layer push; risk of ubuntu-only resolution failures from Windows/tooling extras.
+Root cause: requirements-aws.txt (bedrock-agentcore-starter-toolkit, sam-cli transitives) was compiled into the single runtime lockfile; deploy tooling does not belong in app dependencies.
+Fix: runtime lockfile regenerated from requirements.txt alone (universal, py3.12); AWS deploy tooling stays a local-only extra install, not a CI dependency. mangum added as a real runtime dep for the Lambda handler.
+Prevention: CI installs only the runtime lockfile; deploy tooling documented in doc 09 setup, never compiled into app locks.
+Phase: channels layer
