@@ -74,6 +74,12 @@ plugins = ["pydantic.mypy"]
 module = ["strands.*", "boto3.*", "botocore.*", "yaml"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "gatehouse.agents.mock_model"
+# Strands' shipped stubs type stream()/structured_output() more loosely than the
+# runtime contract this adapter implements and tests verify; intentional.
+disable_error_code = ["override", "unused-ignore"]
+
 # ---------- pytest ----------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
