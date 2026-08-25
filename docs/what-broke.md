@@ -45,6 +45,20 @@ Result: recall 0.50 to 0.71 to 0.875 across three pack/threshold iterations with
 Prevention: mini eval now part of make targets and CI; regressions visible immediately.
 Phase: P1
 
+## [2026-08-24] strands stream protocol mismatch (mock provider)
+Symptom: MockModel events produced empty assistant messages; structured output raised StructuredOutputException.
+Root cause: assumed SDK consumed message-level events; the installed version consumes Bedrock wire chunks (messageStart/contentBlockDelta/messageStop/metadata) via process_stream.
+Fix: rewrote mock to emit Bedrock-format chunks; contract tests now drive a live Agent loop so any future SDK break fails in CI, not prod.
+Prevention: tests/agents/test_mock_model.py asserts text path, forced-tool structured path, and usage accounting.
+Phase: P2
+
+## [2026-08-24] strands type surface drift
+Symptom: ModuleNotFoundError strands.types.messages; mypy override complaints on Model subclass.
+Root cause: SDK moved Message into strands.types.content and ships loose stubs for Model.stream/structured_output.
+Fix: import from strands.types.content; documented pyproject override for the adapter module with runtime tests as the real contract.
+Prevention: mock_model docstring records why overrides are intentional; SDK pin lives in requirements-lock.txt.
+Phase: P1
+
 ## [2026-08-24] lexicon coverage gaps found empirically
 Symptom: remaining misses clustered in investment/lottery strata, both languages.
 Root cause: seed lexicons lacked common phrasings (money laundering, slots left, कर जमा, दावा करें).
