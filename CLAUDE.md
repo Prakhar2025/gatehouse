@@ -112,3 +112,33 @@ Host: Windows 11, git-bash (MSYS) shell. Python 3.12 via py launcher. Node 20+.
 - Use POSIX syntax in shell commands. Forward-slash native paths for Windows tools.
 - Prefer make targets once Makefile lands in P1; direct commands documented per doc.
 - OneDrive is banned for repos. This repo lives at C:\Users\prakh\projects\gatehouse.
+
+## Section 11: Behavioral Guidelines (Karpathy Rules)
+
+Behavioral guidelines to reduce common LLM coding mistakes. Owner-requested addition.
+
+### 1. Think Before Coding
+Don't assume. Don't hide confusion. Surface tradeoffs.
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them, don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+Minimum code that solves the problem. Nothing speculative.
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- If you write 200 lines and it could be 50, rewrite it.
+
+### 3. Surgical Changes
+Touch only what you must. Clean up only your own mess.
+- Don't "improve" adjacent code, comments, or formatting.
+- Match existing style, even if you'd do it differently.
+- Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+Define success criteria. Loop until verified.
+- Transform tasks into verifiable goals.
+- For multi-step tasks, state a brief plan with verification checks.
+- Strong success criteria let you loop independently.
