@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # --- dedupe ---
     dedupe_ttl_hours: int = Field(default=72, ge=1)
 
+    # --- graph key derivation (doc 06 section 3; HMAC salt) ---
+    graph_salt: str = "gatehouse-dev-salt-change-me"
+
     @model_validator(mode="after")
     def _bands_ordered(self) -> Settings:
         """Threshold bands must be monotonic; refuse to boot otherwise."""
@@ -52,6 +55,8 @@ class Settings(BaseSettings):
             raise ValueError("gray_band_low must be <= gray_band_high")
         if self.gray_band_high >= self.silent_kill_floor:
             raise ValueError("silent_kill_floor must exceed gray_band_high")
+        if self.environment == "prod" and self.graph_salt.startswith("gatehouse-dev"):
+            raise ValueError("prod requires a real GATEHOUSE_GRAPH_SALT")
         return self
 
 

@@ -15,30 +15,37 @@ scoring:
 issuers:
   - id: sbi
     name: State Bank of India
+    aliases: [SBI, StateBank]
     official_domains: [sbi.co.in, onlinesbi.sbi, bank.sbi]
     sms_sender_ids: [SBIBNK, SBIINB, SBICRD]
   - id: hdfc
     name: HDFC Bank
+    aliases: [HDFC]
     official_domains: [hdfcbank.com, hdfc.com]
     sms_sender_ids: [HDFCBK, HDFCBK]
   - id: icici
     name: ICICI Bank
+    aliases: [ICICI]
     official_domains: [icicibank.com]
     sms_sender_ids: [ICICIB, ICICIBANK]
   - id: axis
     name: Axis Bank
+    aliases: [Axis]
     official_domains: [axisbank.com]
     sms_sender_ids: [AXISBK, AXISCBL]
   - id: pnb
     name: Punjab National Bank
+    aliases: [PNB]
     official_domains: [pnbindia.in]
     sms_sender_ids: [PNBNK]
   - id: rbi
     name: Reserve Bank of India
+    aliases: [RBI]
     official_domains: [rbi.org.in]
     sms_sender_ids: [RBISAY]
   - id: npci
     name: National Payments Corporation of India
+    aliases: [NPCI]
     official_domains: [npci.org.in, upi.org.in]
     sms_sender_ids: []
 

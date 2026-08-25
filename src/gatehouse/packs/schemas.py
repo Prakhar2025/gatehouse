@@ -52,6 +52,7 @@ class Issuer(BaseModel):
 
     id: SafeText
     name: SafeText
+    aliases: list[SafeText] = Field(default_factory=list)
     official_domains: list[str] = Field(min_length=1)
     sms_sender_ids: list[str] = Field(default_factory=list)
 
