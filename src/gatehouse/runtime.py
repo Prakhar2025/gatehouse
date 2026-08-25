@@ -274,6 +274,7 @@ async def run_pipeline(
     is_forward: bool,
     meter: SpendMeter | None = None,
     now: float | None = None,
+    has_media: bool = False,
 ) -> PipelineOutcome:
     """Full live loop for one accepted, bound signal."""
     started = time.perf_counter()
@@ -287,8 +288,16 @@ async def run_pipeline(
 
     # 2) duplicate-forward budget protection (doc 05 section 5). One
     # conditional call reserves the slot under the real case id.
+    # A screenshot with no text layer has no content hash yet; skipping the
+    # short-circuit keeps two different screenshots from colliding as
+    # duplicates. Content-based hashing returns with the OCR normalize stage.
+    media_only = has_media and not text.strip()
     case_id = new_case_id()
-    hit = rt.dedupe.check_and_record(channel, household_id, text, case_id, now=now)
+    hit = (
+        None
+        if media_only
+        else rt.dedupe.check_and_record(channel, household_id, text, case_id, now=now)
+    )
     if hit is not None:
         return PipelineOutcome(
             status="duplicate",
@@ -320,6 +329,15 @@ async def run_pipeline(
         except Exception as exc:
             log.warning("bus_publish_failed", extra={"extra_fields": {"error": type(exc).__name__}})
 
+    # 3.5) a screenshot with no text layer still gets a completed, honest
+    # investigation (doc 05 section 7). The placeholder is deterministic and
+    # clearly marked; the real OCR path replaces it in the normalize stage
+    # without changing this contract.
+    media_flags: list[str] = []
+    if has_media and not text.strip():
+        text = "[media: image, no extractable text]"
+        media_flags = ["NO_TEXT_LAYER"]
+
     # 4) investigate (fence -> triage -> verify -> graph -> guardian).
     result: CaseResult = await investigate(
         case_id,
@@ -330,6 +348,8 @@ async def run_pipeline(
         model=rt.model,
         meter=meter,
     )
+    if media_flags:
+        result.reason_codes = list(result.reason_codes) + media_flags
 
     # 5) persist evidence bundle (+ atomic verdict write when backed).
     _write_bundle(rt, result, household_id, channel, text)
@@ -448,6 +468,7 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
         sender_name=signal.sender_name,
         text=signal.text,
         is_forward=signal.is_forward,
+        has_media=signal.has_media,
     )
 
 

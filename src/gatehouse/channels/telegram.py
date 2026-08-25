@@ -34,6 +34,8 @@ class InboundSignal:
     sender_name: str
     text: str
     is_forward: bool
+    has_media: bool = False
+    media_mime: str | None = None
 
 
 def verify_secret(header_value: str | None, settings: Settings) -> None:
@@ -67,8 +69,19 @@ def parse_update(payload: dict[str, Any]) -> InboundSignal:
     from_user = message.get("from") or {}
     sender_name = str(from_user.get("first_name", "unknown"))[:40]
 
-    text = message.get("text") or message.get("caption") or ""
-    if not isinstance(text, str) or not text.strip():
+    raw_text = message.get("text") or message.get("caption") or ""
+    if not isinstance(raw_text, str):
+        raise WebhookError("no text content")
+
+    # Photos arrive as a scaled array; sizes are irrelevant at intake. The
+    # channel test matrix (doc 05 section 7) demands a completed verdict even
+    # for a screenshot with no text layer, so a bare photo is accepted here
+    # and carried as NO_TEXT_LAYER downstream instead of rejected.
+    photo = message.get("photo")
+    has_media = isinstance(photo, list) and len(photo) > 0
+
+    text = raw_text.strip()
+    if not text and not has_media:
         raise WebhookError("no text content")
 
     is_forward = "forward_origin" in message or "forward_from" in message
@@ -79,6 +92,8 @@ def parse_update(payload: dict[str, Any]) -> InboundSignal:
         sender_name=sender_name,
         text=text[:4000],  # hard cap: bounded prompts, bounded spend
         is_forward=is_forward,
+        has_media=has_media,
+        media_mime="image/jpeg" if has_media else None,
     )
 
 

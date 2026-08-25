@@ -76,6 +76,19 @@ class TestParseUpdate:
         sig = parse_update(payload)
         assert "upi screenshot" in sig.text
 
+    def test_bare_photo_accepted_without_text(self) -> None:
+        # Matrix row (doc 05 s7): screenshot with no text layer must complete.
+        payload = self._payload()
+        payload["message"] = {
+            "chat": {"id": 1},
+            "from": {"first_name": "A"},
+            "photo": [{}],
+        }
+        sig = parse_update(payload)
+        assert sig.has_media is True
+        assert sig.media_mime == "image/jpeg"
+        assert sig.text == ""
+
     def test_missing_update_id_rejected(self) -> None:
         with pytest.raises(WebhookError, match="update_id"):
             parse_update({"message": {}})

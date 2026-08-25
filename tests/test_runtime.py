@@ -86,6 +86,20 @@ def tg_signal(text: str, chat_id: int = 555, update_id: int = 1) -> Any:
     )
 
 
+def tg_photo_signal(chat_id: int = 555, update_id: int = 1) -> Any:
+    """A forwarded screenshot with no caption and no extractable text."""
+    return parse_update(
+        {
+            "update_id": update_id,
+            "message": {
+                "chat": {"id": chat_id},
+                "from": {"first_name": "Riya"},
+                "photo": [{}],
+            },
+        }
+    )
+
+
 def scam_model() -> MockModel:
     return MockModel(tool_payload={"scam_likelihood": 0.97, "reason_code": "KYC_PHISH"})
 
@@ -239,3 +253,44 @@ class TestPanicContentStripped:
         outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(f"/panic {SCAM_TEXT}")))
         assert outcome.status == "investigated"
         assert outcome.verdict == "SCAM"
+
+
+class TestScreenshotNoTextLayer:
+    """Matrix row (doc 05 s7): OCR path completes, verdict produced."""
+
+    def test_bare_screenshot_completes_with_honest_flag(self, rt: Any) -> None:
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_photo_signal()))
+        assert outcome.status == "investigated"
+        assert outcome.verdict is not None
+        assert "NO_TEXT_LAYER" in outcome.reason_codes
+
+    def test_screenshot_bundle_persisted(self, rt: Any) -> None:
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_photo_signal()))
+        bundle = rt.bundles.latest(HH1, str(outcome.case_id))
+        assert bundle is not None
+        assert bundle.channel == "telegram"
+
+
+class TestDuplicateBudgetProtection:
+    """Matrix row (doc 05 s7): no double spend on a second forward."""
+
+    def test_second_forward_spends_zero(self, rt: Any) -> None:
+        rt.model = scam_model()
+        first: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT, update_id=1)))
+        second: PipelineOutcome = go(
+            handle_telegram_signal(tg_signal(SCAM_TEXT, chat_id=555, update_id=2))
+        )
+        assert first.status == "investigated"
+        assert first.spend_usd >= 0.0
+        assert second.status == "duplicate"
+        assert second.spend_usd == 0.0
+
+    def test_duplicate_leaves_original_bundle_untouched(self, rt: Any) -> None:
+        rt.model = scam_model()
+        first: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT, update_id=1)))
+        go(handle_telegram_signal(tg_signal(SCAM_TEXT, update_id=2)))
+        bundle = rt.bundles.latest(HH1, str(first.case_id))
+        assert bundle is not None
+        assert bundle.revision == 1
