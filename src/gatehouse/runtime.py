@@ -447,6 +447,26 @@ def _escalate(
 # --- channel entrypoints ----------------------------------------------------
 
 
+def _send_member_reply(settings: Settings, chat_id: str, text: str) -> None:
+    """Deliver the member-facing reply through Telegram, best effort.
+
+    Webhook HTTP bodies are discarded by Telegram, so the verdict reaches the
+    member only via sendMessage. Gated on a configured token and a non-local
+    environment: local runs and tests stay fully offline, and a failed send
+    logs a warning instead of failing the webhook (the case still exists).
+    """
+    if settings.environment == "local" or not settings.telegram_bot_token:
+        return
+    try:
+        from gatehouse.runtime_telegram import TelegramSender
+
+        ok = TelegramSender(settings.telegram_bot_token).send(chat_id, text)
+        if not ok:
+            log.warning("member_reply_send_failed", extra={"extra_fields": {"chat_id": chat_id}})
+    except Exception as exc:
+        log.warning("member_reply_error", extra={"extra_fields": {"error": type(exc).__name__}})
+
+
 async def handle_telegram_signal(signal: Any, settings: Settings | None = None) -> PipelineOutcome:
     """Telegram update -> binding check -> live loop. Refusal never spends."""
     rt = get_runtime(settings)
@@ -462,29 +482,34 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
         try:
             binding = rt.bindings.consume_invite(start, "telegram", str(signal.chat_id))
         except InviteError:
+            reply = (
+                "That invite code is invalid or expired. Ask your family guardian for a fresh code."
+            )
+            _send_member_reply(rt.settings, str(signal.chat_id), reply)
             return PipelineOutcome(
                 status="refused",
-                reply_text=(
-                    "That invite code is invalid or expired. "
-                    "Ask your family guardian for a fresh code."
-                ),
+                reply_text=reply,
                 latency_s=time.perf_counter() - started,
             )
         except AlreadyLinkedError:
+            reply = (
+                "This chat is already linked to a Gatehouse household. "
+                "Forward something anytime and it gets checked."
+            )
+            _send_member_reply(rt.settings, str(signal.chat_id), reply)
             return PipelineOutcome(
                 status="refused",
-                reply_text=(
-                    "This chat is already linked to a Gatehouse household. "
-                    "Forward something anytime and it gets checked."
-                ),
+                reply_text=reply,
                 latency_s=time.perf_counter() - started,
             )
+        bound_reply = (
+            f"Linked. This chat now belongs to {binding.household_id}. "
+            "Forward any message that feels risky and Gatehouse checks it."
+        )
+        _send_member_reply(rt.settings, str(signal.chat_id), bound_reply)
         return PipelineOutcome(
             status="bound",
-            reply_text=(
-                f"Linked. This chat now belongs to {binding.household_id}. "
-                "Forward any message that feels risky and Gatehouse checks it."
-            ),
+            reply_text=bound_reply,
             case_id=None,
             household_id=binding.household_id,
             latency_s=time.perf_counter() - started,
@@ -494,15 +519,17 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
         # Type comes from the consume_invite call above; same Binding shape.
         binding = verify_sender(rt.bindings, "telegram", str(signal.chat_id))
     except UnlinkedSenderError:
+        refusal = (
+            "This chat is not linked to a Gatehouse household. "
+            "Ask your family guardian for an invite code."
+        )
+        _send_member_reply(rt.settings, str(signal.chat_id), refusal)
         return PipelineOutcome(
             status="refused",
-            reply_text=(
-                "This chat is not linked to a Gatehouse household. "
-                "Ask your family guardian for an invite code."
-            ),
+            reply_text=refusal,
             latency_s=time.perf_counter() - started,
         )
-    return await run_pipeline(
+    outcome = await run_pipeline(
         rt,
         channel="telegram",
         household_id=binding.household_id,
@@ -511,6 +538,8 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
         is_forward=signal.is_forward,
         has_media=signal.has_media,
     )
+    _send_member_reply(rt.settings, str(signal.chat_id), outcome.reply_text)
+    return outcome
 
 
 async def handle_email_signal(

@@ -335,3 +335,46 @@ class TestStartBinding:
         outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal("/start", chat_id=45)))
         assert outcome.status == "refused"
         assert rt.bindings.lookup("telegram", "45") is None
+
+
+class TestMemberReplyDelivery:
+    """Webhook bodies die inside API Gateway; members hear us via sendMessage."""
+
+    def test_staging_sends_verdict_to_the_chat(self, rt: Any, monkeypatch: Any) -> None:
+        sent: list[tuple[str, str]] = []
+
+        class SpySender:
+            def __init__(self, token: str) -> None:
+                pass
+
+            def send(self, chat_id: str, text: str) -> bool:
+                sent.append((chat_id, text))
+                return True
+
+        import gatehouse.runtime_telegram as rtg
+
+        monkeypatch.setattr(rtg, "TelegramSender", SpySender)
+        rt.settings.environment = "staging"
+        rt.settings.telegram_bot_token = "123:abc"  # noqa: S105 - fake value
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT)))
+        assert outcome.status == "investigated"
+        assert any("Do not pay" in text for _, text in sent)
+
+    def test_local_env_stays_offline(self, rt: Any, monkeypatch: Any) -> None:
+        calls: list[int] = []
+
+        class SpySender:
+            def __init__(self, token: str) -> None:
+                pass
+
+            def send(self, chat_id: str, text: str) -> bool:
+                calls.append(1)
+                return True
+
+        import gatehouse.runtime_telegram as rtg
+
+        monkeypatch.setattr(rtg, "TelegramSender", SpySender)
+        rt.model = scam_model()
+        go(handle_telegram_signal(tg_signal(BENIGN_TEXT)))
+        assert calls == []

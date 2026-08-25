@@ -8,6 +8,7 @@ degrade silently.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from typing import Literal
 
@@ -20,9 +21,12 @@ Environment = Literal["local", "staging", "prod"]
 class Settings(BaseSettings):
     """Process-wide settings, loaded once from the environment."""
 
+    # The dotenv path is overridable so the test suite can pin it to an empty
+    # file: a developer's real .env must never leak live secrets into tests.
+    _env_file = os.environ.get("GATEHOUSE_DOTENV_PATH", ".env")
     model_config = SettingsConfigDict(
         env_prefix="GATEHOUSE_",
-        env_file=".env",
+        env_file=_env_file,
         env_file_encoding="utf-8",
         extra="ignore",
     )
