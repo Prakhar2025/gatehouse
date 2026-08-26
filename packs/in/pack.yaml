@@ -1,8 +1,13 @@
-# Gatehouse country pack: India v0.1.0
+# Gatehouse country pack: India v0.2.0
 # Seed data from public advisories (RBI, I4C, bank official domains).
 # Community-extensible; schema-validated in CI; pinned per case in bundles.
+#
+# v0.2.0 (P6 calibration set): trusted_domains tier added for legitimate
+# non-bank link surfaces; lexicon gaps closed for relative-impersonation,
+# UPI collect fraud, courier intimidation, and job/task scams found while
+# designing the 600-case evaluation set (doc 07).
 region: in
-version: 0.1.0
+version: 0.2.0
 languages: [en, hi]
 
 scoring:
@@ -128,6 +133,25 @@ lexicons:
       - "lottery winner"
       - "you have won"
       - "claim your prize"
+      # relative-impersonation signatures: relationship claim fused with the
+      # money ask, so ordinary family news about lost phones never matches
+      - "papa need money"
+      - "mummy need money"
+      - "son send money"
+      - "daughter send money"
+      # wrong-person payment reversal (UPI collect abuse)
+      - "accidentally transferred"
+      - "sent money by mistake"
+      # collect-request coercion shapes
+      - "your account is on hold"
+      - "scan to receive"
+      # task/job scam cores
+      - "prepaid task"
+      - "part time job guaranteed"
+      # UPI collect abuse: the PIN-to-receive confusion attack
+      - "enter your upi pin"
+      # digital-arrest parcel variant: contraband-parcel claim
+      - "passports seized"
     moderate:
       - "update your kyc"
       - "complete your kyc"
@@ -149,6 +173,9 @@ lexicons:
       - "deposit immediately"
       - "won the"
       - "lucky draw winner"
+      - "customs clearance"
+      - "commission for completing"
+      - "release your parcel"
     weak:
       - "offer expires soon"
       - "act now"
@@ -164,6 +191,14 @@ lexicons:
       - "इनाम का दावा करें"
       - "गिरफ्तारी से बचने"
       - "मनी लॉन्ड्रिंग"
+      # relative-impersonation: relationship fused with the money ask
+      - "पापा को पैसे भेजो"
+      - "मम्मी को पैसे भेजो"
+      - "बेटा पैसे भेजो"
+      # wrong-person payment reversal (UPI collect abuse)
+      - "पैसे वापस"
+      # lottery phrasing variant: number-won form
+      - "आपका नंबर जीता"
     moderate:
       - "केवाईसी अपडेट करें"
       - "आवश्यक कार्रवाई"
@@ -175,6 +210,88 @@ lexicons:
       - "ज्वाइनिंग फीस"
       - "कर जमा"
       - "दावा करें"
+      - "पार्सल जब्त"
+      - "कस्टम शुल्क"
+      # job/task scam Hindi forms
+      - "घर बैठे काम"
+      - "कमीशन तुरंत"
+      - "रिफंड रोक दिया"
+      # order-independent refund-coercion tail (amounts split other forms)
+      - "तभी रिफंड मिलेगा"
     weak:
       - "ऑफर जल्द समाप्त"
       - "अभी करें"
+
+# Curated NON-issuer brands whose official link surfaces are safe to trust
+# for legitimate traffic. Kept separate from issuers on purpose: trusting a
+# retailer says nothing about a bank's link surface. Domains are the official
+# registrable domains of each service; suffix matching covers subdomains.
+trusted_services:
+  - id: amazon
+    name: Amazon
+    aliases: [Amazon]
+    official_domains: [amazon.in, amazonpay.in]
+  - id: flipkart
+    name: Flipkart
+    aliases: [Flipkart]
+    official_domains: [flipkart.com]
+  - id: swiggy
+    name: Swiggy
+    aliases: [Swiggy]
+    official_domains: [swiggy.com]
+  - id: zomato
+    name: Zomato
+    aliases: [Zomato]
+    official_domains: [zomato.com]
+  - id: irctc
+    name: IRCTC
+    aliases: [IRCTC]
+    official_domains: [irctc.co.in]
+  - id: bluedart
+    name: BlueDart
+    aliases: [BlueDart]
+    official_domains: [bluedart.com]
+  - id: delhivery
+    name: Delhivery
+    aliases: [Delhivery]
+    official_domains: [delhivery.com]
+  - id: dhl
+    name: DHL
+    aliases: [DHL]
+    official_domains: [dhl.com, dhl.co.in]
+  - id: fedex
+    name: FedEx
+    aliases: [FedEx]
+    official_domains: [fedex.com]
+  - id: dtdc
+    name: DTDC
+    aliases: [DTDC]
+    official_domains: [dtdc.in]
+  - id: ekart
+    name: Ekart Logistics
+    aliases: [Ekart]
+    official_domains: [ekartlogistics.com]
+  - id: incometax
+    name: Income Tax Department
+    aliases: [IT Department, Income Tax Dept, IncomeTax, आयकर विभाग]
+    official_domains: [incometax.gov.in]
+  - id: gst
+    name: GST Network
+    aliases: [GSTN]
+    official_domains: [gst.gov.in]
+  - id: uidai
+    name: UIDAI
+    aliases: [UIDAI, Aadhaar]
+    official_domains: [uidai.gov.in, myaadhaar.uidai.gov.in]
+  - id: passport
+    name: Passport Seva
+    aliases: [Passport Seva, Passport]
+    official_domains: [passportindia.gov.in]
+  - id: epfo
+    name: EPFO
+    aliases: [EPFO, UAN]
+    official_domains: [epfindia.gov.in]
+  - id: mygov
+    name: MyGov
+    aliases: [MyGov]
+    official_domains: [mygov.in, india.gov.in]

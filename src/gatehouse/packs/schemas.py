@@ -20,14 +20,21 @@ SafeText = Annotated[str, Field(min_length=1, max_length=200)]
 SemVer = Annotated[str, Field(pattern=r"^\d+\.\d+\.\d+$")]
 
 # Canonical stratum ordering for byte-stable reports (doc 07).
+# Legacy P1 strata kept stable; P6 full-set strata appended in doc 07 table order.
 STRATA_ORDER: tuple[str, ...] = (
     "kyc_scam",
     "digital_arrest",
     "investment",
     "lottery",
+    "upi_collect_fraud",
+    "courier_scam",
+    "job_task_scam",
+    "relative_impersonation",
     "legit_bank_offer",
     "delivery_update",
+    "govt_notice_legit",
     "family_chatter",
+    "newsletter_promo",
     "otp_forward",
     "govt_legit_trap",
 )
@@ -57,6 +64,27 @@ class Issuer(BaseModel):
     sms_sender_ids: list[str] = Field(default_factory=list)
 
     @field_validator("official_domains", "sms_sender_ids")
+    @classmethod
+    def _lowercase(cls, value: list[str]) -> list[str]:
+        return [item.lower() for item in value]
+
+
+class TrustedService(BaseModel):
+    """A non-issuer brand whose official link surface is curated.
+
+    E-commerce, logistics, and government portals. Structurally identical to
+    Issuer minus SMS sender ids: the same claim-adjudication code path runs
+    over both registries in verify.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: SafeText
+    name: SafeText
+    aliases: list[SafeText] = Field(default_factory=list)
+    official_domains: list[str] = Field(min_length=1)
+
+    @field_validator("official_domains")
     @classmethod
     def _lowercase(cls, value: list[str]) -> list[str]:
         return [item.lower() for item in value]
@@ -103,6 +131,23 @@ class CountryPack(BaseModel):
     issuers: list[Issuer] = Field(default_factory=list)
     rails: list[Rail] = Field(default_factory=list)
     lexicons: list[Lexicon] = Field(min_length=1)
+    # Curated NON-issuer brands that are safe to trust for link-bearing
+    # legitimate traffic: e-commerce, logistics, government portals. Kept
+    # separate from issuers on purpose: trusting a retailer says nothing
+    # about a bank's link surface, and vice versa.
+    trusted_services: list[TrustedService] = Field(default_factory=list)
+
+    def trusted_domain_set(self) -> frozenset[str]:
+        """All curated trusted-service domains, lowercased."""
+        return frozenset(
+            domain.lower()
+            for service in self.trusted_services
+            for domain in service.official_domains
+        )
+
+    def claim_registries(self) -> list[Issuer | TrustedService]:
+        """Issuers then trusted services, for uniform claim adjudication."""
+        return [*self.issuers, *self.trusted_services]
 
     def issuer_domains(self) -> frozenset[str]:
         """All trusted domains across issuers, lowercased."""

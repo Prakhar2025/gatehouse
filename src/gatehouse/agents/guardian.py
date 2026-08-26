@@ -58,10 +58,14 @@ def compose_package(
     # definition. Genuine bank traffic must not park in the review queue.
     domain_findings = [f for f in findings if f.check_type == "domain_intel"]
     issuer_verified = any(f.check_type == "issuer_rule" and f.result == "PASS" for f in findings)
+    # Trusted rescue requires the message to CLAIM a trusted party. A link
+    # alone proves nothing (any scam carries a link); the claim is what the
+    # domain check adjudicates.
+    claims_issuer = any(f.check_type == "issuer_rule" for f in findings)
     links_all_verified = (
         bool(domain_findings)
         and all(f.result == "PASS" for f in domain_findings)
-        and issuer_verified
+        and (issuer_verified or claims_issuer)
     )
 
     if links_all_verified and triage.signal_class == "SCREEN" and not hard_fails:

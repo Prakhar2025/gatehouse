@@ -28,7 +28,7 @@ def test_run_payload_complete() -> None:
         "per_stratum",
     ):
         assert key in payload
-    assert payload["pack_version"] == "0.1.0"
+    assert payload["pack_version"] == "0.2.0"
     assert payload["runner"] == "mini-rule-v0"
 
 

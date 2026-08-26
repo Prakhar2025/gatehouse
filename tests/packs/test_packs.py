@@ -76,7 +76,7 @@ def load_pack_path_helper(raw: dict[str, object]) -> CountryPack:
 class TestIndiaPack:
     def test_loads(self, india: CountryPack) -> None:
         assert india.region == "in"
-        assert india.version == "0.1.0"
+        assert india.version == "0.2.0"
 
     def test_languages(self, india: CountryPack) -> None:
         assert "en" in india.languages and "hi" in india.languages

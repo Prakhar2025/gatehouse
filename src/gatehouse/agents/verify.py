@@ -74,7 +74,7 @@ def _extract_urls(text: str) -> list[str]:
     return hosts
 
 
-def _domain_matches_issuer(host: str, domains: frozenset[str]) -> str | None:
+def _domain_in_set(host: str, domains: frozenset[str]) -> str | None:
     """Return the trusted domain this host belongs to, if any (suffix match)."""
     for domain in domains:
         if host == domain or host.endswith("." + domain):
@@ -88,9 +88,14 @@ def verify_signal(text: str, pack: CountryPack) -> VerifyOutput:
     text_lower = text.lower()
     domains = pack.issuer_domains()
 
-    # 1) URL/domain reputation: trusted, untrusted, or unknown
+    # 1) URL/domain reputation: issuer-official, curated trusted, or unknown.
+    # The curated trusted tier (pack.trusted_domains) covers legitimate
+    # non-bank link surfaces: e-commerce tracking, logistics, government
+    # portals. Without it, every genuine delivery or tax-refund message
+    # parked in INCONCLUSIVE forever, because nothing downstream can clear
+    # an unverified link.
     for host in _extract_urls(text):
-        trusted = _domain_matches_issuer(host, domains)
+        trusted = _domain_in_set(host, domains)
         if trusted:
             findings.append(
                 VerificationFinding(
@@ -102,40 +107,57 @@ def verify_signal(text: str, pack: CountryPack) -> VerifyOutput:
                 )
             )
         else:
-            # not an issuer domain. Fresh-domain intel arrives in P3 (url_intel
-            # tool); today the honest verdict is INCONCLUSIVE, not FAIL: we do
-            # not yet know age or reputation.
-            findings.append(
-                VerificationFinding(
-                    subject=host,
-                    check_type="domain_intel",
-                    result="INCONCLUSIVE",
-                    evidence_ref="not_in_issuer_registry; age_intel_pends_p3",
-                    weight=0.2,
+            curated = _domain_in_set(host, pack.trusted_domain_set())
+            if curated:
+                findings.append(
+                    VerificationFinding(
+                        subject=host,
+                        check_type="domain_intel",
+                        result="PASS",
+                        evidence_ref=f"trusted_domain:{curated}",
+                        weight=0.85,
+                    )
                 )
-            )
+            else:
+                # not an issuer or curated domain. Fresh-domain intel arrives
+                # in P3 (url_intel tool); today the honest verdict is
+                # INCONCLUSIVE, not FAIL: we do not yet know age or reputation.
+                findings.append(
+                    VerificationFinding(
+                        subject=host,
+                        check_type="domain_intel",
+                        result="INCONCLUSIVE",
+                        evidence_ref="not_in_issuer_registry; age_intel_pends_p3",
+                        weight=0.2,
+                    )
+                )
 
-    # 2) Issuer-claim adjudication: a message naming a bank splits into two
-    # honest outcomes. Links present and all inside official domains: PASS,
-    # issuer verified (this is the false-positive kill switch for genuine
-    # bank SMS). Links present but outside official domains: FAIL, the
-    # classic brand-spoof shape. No links at all: nothing to adjudicate.
-    for issuer in pack.issuers:
-        names = [issuer.name, *issuer.aliases]
+    # 2) Claim adjudication over BOTH registries (issuers first, then curated
+    # trusted services). A message naming a known brand splits into two honest
+    # outcomes. Links present and all inside that registry's official domains:
+    # PASS, claim verified (the false-positive kill switch for genuine bank,
+    # delivery, and government traffic). Links present but outside: FAIL, the
+    # classic brand-spoof shape. No links: nothing to adjudicate.
+    for entity in pack.claim_registries():
+        names = [entity.name, *entity.aliases]
         matched = next((n for n in names if n.lower() in text_lower), None)
         if matched is None:
             continue
         urls = _extract_urls(text)
         if not urls:
             continue
-        if any(_domain_matches_issuer(u, domains) for u in urls):
-            trusted = next(d for u in urls if (d := _domain_matches_issuer(u, domains)) is not None)
+        if any(_domain_in_set(u, domains | pack.trusted_domain_set()) for u in urls):
+            trusted = next(
+                d
+                for u in urls
+                if (d := _domain_in_set(u, domains | pack.trusted_domain_set())) is not None
+            )
             findings.append(
                 VerificationFinding(
                     subject=matched,
                     check_type="issuer_rule",
                     result="PASS",
-                    evidence_ref=f"claims {issuer.name} and links resolve inside {trusted}",
+                    evidence_ref=f"claims {entity.name} and links resolve inside {trusted}",
                     weight=0.9,
                 )
             )
@@ -146,7 +168,7 @@ def verify_signal(text: str, pack: CountryPack) -> VerifyOutput:
                     check_type="issuer_rule",
                     result="FAIL",
                     evidence_ref=(
-                        f"claims {issuer.name} but links point outside {issuer.id} official domains"
+                        f"claims {entity.name} but links point outside {entity.id} official domains"
                     ),
                     weight=0.5,
                 )
