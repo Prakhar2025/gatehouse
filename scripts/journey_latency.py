@@ -63,10 +63,10 @@ def _send(base: str, secret: str, payload: dict) -> float:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3:
+    if len(argv) != 2:
         print("usage: journey_latency.py <api_base> <n_sends>", file=sys.stderr)
         return 2
-    base, n = argv[1].rstrip("/"), int(argv[2])
+    base, n = argv[0].rstrip("/"), int(argv[1])
     vals = _load_env()
     secret = vals["GATEHOUSE_TELEGRAM_WEBHOOK_SECRET"]
 
