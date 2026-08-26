@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | all prior docs |
-| Last updated | 2026-08-24 |
+| Last updated | 2026-08-26 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.3.0 | Phase order revised by owner decision (2026-08-26): P6 runs before P5. Rationale: soak clock (7+ days) is the long pole to the Sep 10 submission target; starting P6 first starts soak earliest, P5 console builds during the soak window, P7 closes. Exit criteria unchanged; only sequence changes |
 | 0.2.0 | Added the honest scale-up truth section (P8 is a horizon, not a step), post-P8 product eras, money/spend policy, and what "done company" means. Phase exit criteria unchanged |
 | 0.1.0 | Initial draft |
 
