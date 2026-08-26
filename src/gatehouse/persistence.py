@@ -110,8 +110,10 @@ class GraphPersistence:
             Key={"pk": {"S": graph_key(kind, hashed_value)}},
             UpdateExpression=(
                 "ADD event_count :one, ttl_x :ttl SET last_case = :c, "
-                "taint = if_not_exists(taint, :zero), first_seen = if_not_exists(first_seen, :now)"
+                "#t = if_not_exists(#t, :zero), first_seen = if_not_exists(first_seen, :now)"
             ),
+            # taint is a DynamoDB reserved keyword: never a bare name.
+            ExpressionAttributeNames={"#t": "taint"},
             ExpressionAttributeValues={
                 ":one": {"N": "1"},
                 ":ttl": {"N": str(ttl)},

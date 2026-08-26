@@ -28,6 +28,11 @@ def main() -> int:
         if "=" in line:
             k, v = line.split("=", 1)
             vals[k.strip()] = v.strip()
+    # Real environment variables win over file values: lets a single deploy
+    # target a test guardian chat without touching anyone's .env.
+    import os
+
+    vals.update({k: v for k, v in os.environ.items() if k.startswith("GATEHOUSE_")})
     required = [
         "GATEHOUSE_TELEGRAM_WEBHOOK_SECRET",
         "GATEHOUSE_GRAPH_SALT",

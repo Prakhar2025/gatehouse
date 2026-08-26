@@ -119,15 +119,19 @@ class _FakeDynamo:
 
     def update_item(self, **kwargs: Any) -> dict[str, Any]:
         self.updates.append(kwargs)
+        from tests.conftest import assert_dynamo_grammar_safe
+
+        assert_dynamo_grammar_safe(kwargs)
         key = (kwargs["Key"]["pk"]["S"], kwargs["Key"]["sk"]["S"])
         item = self._items.get(key)
         if item is None:
             raise _FakeConditionFailError("ConditionalCheckFailed")
         if kwargs.get("ConditionExpression", "").startswith("attribute_exists"):
-            consumed = item.get("consumed", {}).get("BOOL", False)
-            if consumed:
+            names = kwargs.get("ExpressionAttributeNames", {})
+            attr = names.get("#c", "consumed")
+            if item.get(attr, {}).get("BOOL", False):
                 raise _FakeConditionFailError("ConditionalCheckFailed")
-            item["consumed"] = kwargs["ExpressionAttributeValues"][":true"]
+            item[attr] = kwargs["ExpressionAttributeValues"][":true"]
         self._items[key] = item
         return {"Attributes": item}
 

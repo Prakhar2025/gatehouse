@@ -162,10 +162,12 @@ class DynamoBindingStore:
         resp = self._client.update_item(
             TableName=self._table,
             Key={"pk": {"S": f"INVITE#{code}"}, "sk": {"S": "META"}},
-            UpdateExpression=("SET consumed = :true"),
-            ConditionExpression=(
-                "attribute_exists(pk) AND consumed = :false AND expires_at > :now"
-            ),
+            # consumed and expires_at carry no bare names in the grammar:
+            # DynamoDB reserves both keywords, and only the live service
+            # validates expressions (in-memory fakes accept anything).
+            UpdateExpression=("SET #c = :true"),
+            ConditionExpression=("attribute_exists(pk) AND #c = :false AND #e > :now"),
+            ExpressionAttributeNames={"#c": "consumed", "#e": "expires_at"},
             ExpressionAttributeValues={
                 ":true": {"BOOL": True},
                 ":false": {"BOOL": False},

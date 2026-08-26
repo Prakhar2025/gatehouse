@@ -53,8 +53,10 @@ class DynamoGraphStore:
                 Key={"pk": {"S": _node_key(kind, hashed)}},
                 UpdateExpression=(
                     "ADD event_count :one SET last_seen = :ts, "
-                    "first_seen = if_not_exists(first_seen, :ts), expires_at = :ttl_x"
+                    "first_seen = if_not_exists(first_seen, :ts), #e = :ttl_x"
                 ),
+                # expires_at is a DynamoDB reserved keyword: never a bare name.
+                ExpressionAttributeNames={"#e": "expires_at"},
                 ExpressionAttributeValues={
                     ":one": {"N": "1"},
                     ":ts": {"N": str(ts)},
@@ -67,8 +69,10 @@ class DynamoGraphStore:
                 self._client.update_item(
                     TableName=self._table,
                     Key={"pk": {"S": _node_key(kind, hashed)}},
-                    UpdateExpression="SET taint = :base",
-                    ConditionExpression=("attribute_not_exists(taint) OR taint < :base"),
+                    UpdateExpression="SET #t = :base",
+                    # taint is a DynamoDB reserved keyword: never a bare name.
+                    ConditionExpression=("attribute_not_exists(#t) OR #t < :base"),
+                    ExpressionAttributeNames={"#t": "taint"},
                     ExpressionAttributeValues={":base": {"N": str(taint_base)}},
                 )
             except Exception as exc:

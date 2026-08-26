@@ -78,3 +78,10 @@ Root cause: escalate() defaults to the real wall clock; inside quiet hours (22:0
 Fix: injected the awake-hour fixture timestamp like every sibling test; the guard is now exercised regardless of when the suite runs.
 Prevention: assertions about routing must pin the clock explicitly; wall-clock defaults make tests time-of-day dependent, same failure family as the epoch fixtures rule already in this ledger.
 Phase: channels layer
+
+## [2026-08-26] reserved DynamoDB keywords shipped a 500ing bind path past a green suite
+Symptom: first live /start bind returned HTTP 500; local suite was fully green.
+Root cause: consumed, expires_at, and taint are DynamoDB reserved keywords used as bare attribute names inside update and condition expressions. In-memory fakes accept any grammar, so only the live service rejected them.
+Fix: all expressions now use ExpressionAttributeNames placeholders across binding, graph, and persistence stores. New conftest guard fails any test-recorded Dynamo call carrying a bare reserved word, so this defect class can no longer reach main.
+Prevention: fakes must encode the real service's grammar rules or a contract test must; green-on-fake proves nothing about wire-format validation.
+Phase: channels layer

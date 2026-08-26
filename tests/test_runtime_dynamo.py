@@ -16,6 +16,9 @@ class FakeDynamo:
         self.fail_batch = False
 
     def update_item(self, **kwargs: Any) -> dict[str, Any]:
+        from tests.conftest import assert_dynamo_grammar_safe
+
+        assert_dynamo_grammar_safe(kwargs)
         self.updates.append(kwargs)
         return {}
 
@@ -51,8 +54,9 @@ class TestUpsert:
         first = client.updates[0]
         assert "ADD event_count" in first["UpdateExpression"]
         second = client.updates[1]
-        assert "SET taint = :base" in second["UpdateExpression"]
-        assert "attribute_not_exists(taint) OR taint < :base" in second["ConditionExpression"]
+        assert "SET #t = :base" in second["UpdateExpression"]
+        assert "attribute_not_exists(#t) OR #t < :base" in second["ConditionExpression"]
+        assert second["ExpressionAttributeNames"] == {"#t": "taint"}
 
     def test_existing_higher_taint_condition_fails_silently(self) -> None:
         client = FakeDynamo()
