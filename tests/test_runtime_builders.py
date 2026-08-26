@@ -46,7 +46,7 @@ class TestBackendSelection:
             def __init__(self, service: str) -> None:
                 self.service = service
 
-        def fake_client(service: str) -> Any:
+        def fake_client(service: str, settings: Any = None) -> Any:
             return FakeClient(service)
 
         monkeypatch.setattr(runtime, "_aws_client", fake_client)

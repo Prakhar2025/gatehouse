@@ -156,19 +156,25 @@ def load_pack_cached(path: Path | None = None) -> CountryPack:
 # --- backend builders -------------------------------------------------------
 
 
-def _aws_client(service: str) -> Any:
-    """Lazy boto3 client factory; tests monkeypatch this to stay offline."""
+def _aws_client(service: str, settings: Settings | None = None) -> Any:
+    """Lazy boto3 client factory pinned to the configured region.
+
+    Tests monkeypatch this to stay offline. Region comes from settings
+    explicitly: relying on ambient AWS_REGION made local staging runs hit
+    the wrong partition endpoint while deploys worked.
+    """
     import boto3
 
+    s = settings or get_settings()
     # Any-aliased because the SDK stubs demand literal service names.
     client_factory: Any = boto3.client
-    return client_factory(service)
+    return client_factory(service, region_name=s.region)
 
 
 def build_bindings(settings: Settings) -> BindingStore:
     if settings.environment == "local":
         return InMemoryBindingStore()
-    return DynamoBindingStore(_aws_client("dynamodb"), settings.cases_table_name)
+    return DynamoBindingStore(_aws_client("dynamodb", settings), settings.cases_table_name)
 
 
 def build_dedupe(settings: Settings) -> DedupeStore:
@@ -181,14 +187,14 @@ def build_dedupe(settings: Settings) -> DedupeStore:
     if settings.environment == "local":
         return InMemoryDedupeStore(ttl_seconds_by_channel=ttl)
     return DynamoDedupeStore(
-        _aws_client("dynamodb"), settings.cases_table_name, ttl_seconds_by_channel=ttl
+        _aws_client("dynamodb", settings), settings.cases_table_name, ttl_seconds_by_channel=ttl
     )
 
 
 def build_bundles(settings: Settings) -> BundleStore:
     if settings.environment == "local":
         return InMemoryBundleStore()
-    return DynamoBundleStore(_aws_client("dynamodb"), settings.cases_table_name)
+    return DynamoBundleStore(_aws_client("dynamodb", settings), settings.cases_table_name)
 
 
 def build_graph(settings: Settings) -> GraphStore:
@@ -198,7 +204,7 @@ def build_graph(settings: Settings) -> GraphStore:
         return InMemoryGraphStore()
     from gatehouse.runtime_dynamo import DynamoGraphStore
 
-    return DynamoGraphStore(_aws_client("dynamodb"), settings.graph_table_name)
+    return DynamoGraphStore(_aws_client("dynamodb", settings), settings.graph_table_name)
 
 
 def build_notifier(settings: Settings) -> Notifier:
@@ -221,7 +227,7 @@ def build_model(settings: Settings) -> Any | None:
 def build_case_store(settings: Settings) -> CaseStore | None:
     if settings.environment == "local":
         return None  # local loop skips Dynamo verdict writes; bundles suffice
-    return CaseStore(_aws_client("dynamodb"), settings.cases_table_name, settings)
+    return CaseStore(_aws_client("dynamodb", settings), settings.cases_table_name, settings)
 
 
 def build_bus_publisher(settings: Settings) -> Any | None:
@@ -229,7 +235,7 @@ def build_bus_publisher(settings: Settings) -> Any | None:
         return None
     from gatehouse.channels.bus import EventBridgePublisher
 
-    return EventBridgePublisher(_aws_client("events"), settings.graph_salt)
+    return EventBridgePublisher(_aws_client("events", settings), settings.graph_salt)
 
 
 def get_runtime(settings: Settings | None = None) -> Runtime:
