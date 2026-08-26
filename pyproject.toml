@@ -57,6 +57,10 @@ ignore = [
     "S311",  # random ok: seeded, non-crypto use
     "E501",  # fixture scam templates are verbatim-length by design
 ]
+"src/gatehouse/evaluation/full_set.py" = [
+    "S311",  # random ok: seeded, non-crypto use
+    "E501",  # fixture scam templates are verbatim-length by design
+]
 
 [tool.ruff.format]
 quote-style = "double"
