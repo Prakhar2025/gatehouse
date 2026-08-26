@@ -113,3 +113,10 @@ Root cause: the pack listed 7 issuers with partial domains, so ucoonline.bank.in
 Fix: issuer registry grown to 17 Indian banks and payment entities with real official domains; URL extraction now catches bare domains and filters numeric phantom hosts; classifier counts bare-domain presence as a URL signal.
 Prevention: detection data is a product surface, not a config afterthought; every real-miss soak message must end in the failure taxonomy and a pack or rule change.
 Phase: channels layer
+
+## [2026-08-26] issuer verification could only fail, never clear, so genuine bank traffic stayed flagged
+Symptom: even with ucoonline.bank.in in the registry, the UCO alert stayed SUSPICIOUS on TRIAGE_SCREEN because link presence alone bumps triage to SCREEN and nothing downstream could cancel it.
+Root cause: the issuer rule had one polarity (FAIL on spoof) and no PASS polarity (verified on authentic), so no evidence could ever clear a link-driven flag. A fraud shield that cannot say verified is half a shield.
+Fix: issuer claim adjudication now has both outcomes, PASS with weight 0.9 when links resolve inside the claimed issuer's domain, FAIL on spoof; the guardian gains an issuer-verified kill switch that returns SAFE with ISSUER_VERIFIED when every domain finding passes and the issuer claim passes.
+Prevention: every rule must define both its positive and negative outcome; a check that can only add risk accumulates false positives without bound.
+Phase: channels layer

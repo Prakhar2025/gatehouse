@@ -36,32 +36,39 @@ class VerifyOutput:
 
 
 def _extract_urls(text: str) -> list[str]:
-    """Extract candidate hosts. Bare-domain matches that are almost certainly
-    NOT hosts (numbers like amounts and timestamps, file fragments) are
-    filtered so genuine bank SMS does not drown in phantom domains."""
+    """Extract candidate hosts: scheme'd URLs and www forms first (each
+    consumed atomically so their paths are never re-matched), then bare
+    domains elsewhere in the text, filtered for phantom tokens that come
+    from amounts and timestamps (rs.83675.45.for)."""
     hosts: list[str] = []
+    consumed_spans: list[tuple[int, int]] = []
+    bare_hits: list[tuple[int, str]] = []
     for match in _URL_RE.finditer(text):
-        host = match.group(1) or match.group(2) or match.group(3)
-        host = host.lower().strip("./")
-        if not host:
+        scheme_host, www_host, bare_host = match.group(1), match.group(2), match.group(3)
+        if scheme_host or www_host:
+            host = (scheme_host or www_host or "").lower().strip("./")
+            if host:
+                hosts.append(host)
+            # Consume through the end of the scheme'd URL's path: the regex
+            # only captures the host, so path tokens after it (ATM.jsp)
+            # would otherwise re-match as bare domains.
+            path_end = match.end()
+            while path_end < len(text) and not text[path_end].isspace():
+                path_end += 1
+            consumed_spans.append((match.start(), path_end))
+        elif bare_host:
+            bare_hits.append((match.start(), bare_host.lower().strip("./")))
+    for pos, host in bare_hits:
+        # Skip bare tokens that merely trail a scheme'd URL's path.
+        if any(start <= pos < end for start, end in consumed_spans):
             continue
         labels = host.split(".")
-        # A real host has an alphabetic TLD label and at least one
-        # alphabetic second-level label; 'rs.83675.45.for' and 'atm.jsp'
-        # from amount/time strings do not survive this.
         tld = labels[-1]
-        second_level = labels[-2] if len(labels) >= 2 else ""
-        if not tld.isalpha() or not any(c.isalpha() for c in second_level):
+        if len(labels) < 2 or len(tld) < 2 or not tld.isalpha():
+            continue
+        if not any(c.isalpha() for c in labels[-2]):
             continue
         if all(not c.isalpha() for c in labels[0]):
-            continue
-        # Trailing path fragments captured without a scheme (e.g. 'atm.jsp'
-        # after a slash) are not hosts; real registrable hosts carry a
-        # known-ish TLD of 2+ letters, which 'jsp' fails as a bare fragment
-        # only when it appears alone. Keep it: 'atm.jsp' IS a plausible
-        # phishing host. Only drop fragments whose TLD is a number-led or
-        # single-letter label.
-        if len(tld) < 2:
             continue
         hosts.append(host)
     return hosts
@@ -108,25 +115,42 @@ def verify_signal(text: str, pack: CountryPack) -> VerifyOutput:
                 )
             )
 
-    # 2) Bank-name claims (name or alias) without matching trusted URL
+    # 2) Issuer-claim adjudication: a message naming a bank splits into two
+    # honest outcomes. Links present and all inside official domains: PASS,
+    # issuer verified (this is the false-positive kill switch for genuine
+    # bank SMS). Links present but outside official domains: FAIL, the
+    # classic brand-spoof shape. No links at all: nothing to adjudicate.
     for issuer in pack.issuers:
         names = [issuer.name, *issuer.aliases]
-        if any(n.lower() in text_lower for n in names):
-            urls = _extract_urls(text)
-            if urls and not any(_domain_matches_issuer(u, domains) for u in urls):
-                matched = next(n for n in names if n.lower() in text_lower)
-                findings.append(
-                    VerificationFinding(
-                        subject=matched,
-                        check_type="issuer_rule",
-                        result="FAIL",
-                        evidence_ref=(
-                            f"claims {issuer.name} but links point outside "
-                            f"{issuer.id} official domains"
-                        ),
-                        weight=0.5,
-                    )
+        matched = next((n for n in names if n.lower() in text_lower), None)
+        if matched is None:
+            continue
+        urls = _extract_urls(text)
+        if not urls:
+            continue
+        if any(_domain_matches_issuer(u, domains) for u in urls):
+            trusted = next(d for u in urls if (d := _domain_matches_issuer(u, domains)) is not None)
+            findings.append(
+                VerificationFinding(
+                    subject=matched,
+                    check_type="issuer_rule",
+                    result="PASS",
+                    evidence_ref=f"claims {issuer.name} and links resolve inside {trusted}",
+                    weight=0.9,
                 )
+            )
+        else:
+            findings.append(
+                VerificationFinding(
+                    subject=matched,
+                    check_type="issuer_rule",
+                    result="FAIL",
+                    evidence_ref=(
+                        f"claims {issuer.name} but links point outside {issuer.id} official domains"
+                    ),
+                    weight=0.5,
+                )
+            )
 
     # 3) VPA rail grammar: malformed handles are suspicious
     for match in re.finditer(r"\b([a-zA-Z0-9._-]{2,})@([a-zA-Z0-9-]{2,})\b", text):

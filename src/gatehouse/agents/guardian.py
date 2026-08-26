@@ -49,7 +49,24 @@ def compose_package(
     verdict: Verdict
     confidence: float
 
-    if hard_fails:
+    # Issuer-verified kill switch: when every link in the message resolves
+    # inside an official issuer domain and the issuer claim itself PASSes,
+    # a SCREEN band driven only by link presence is a false positive by
+    # definition. Genuine bank traffic must not park in the review queue.
+    domain_findings = [f for f in findings if f.check_type == "domain_intel"]
+    issuer_verified = any(f.check_type == "issuer_rule" and f.result == "PASS" for f in findings)
+    links_all_verified = (
+        bool(domain_findings)
+        and all(f.result == "PASS" for f in domain_findings)
+        and issuer_verified
+    )
+
+    if links_all_verified and triage.signal_class == "SCREEN" and not hard_fails:
+        verdict = "SAFE"
+        confidence = _round(max(0.75, 1.0 - triage.confidence))
+        reason_codes.append("ISSUER_VERIFIED")
+        evidence.append("all links resolve inside the claimed issuer's official domain")
+    elif hard_fails:
         verdict = "SCAM"
         weights = [f.weight for f in hard_fails]
         confidence = min(1.0, 0.70 + 0.10 * len(weights) + max(weights) * 0.2)
