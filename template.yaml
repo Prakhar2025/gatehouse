@@ -52,7 +52,7 @@ Globals:
         GATEHOUSE_CASES_TABLE_NAME: !Sub gatehouse-cases-${Environment}
         GATEHOUSE_GRAPH_TABLE_NAME: !Sub gatehouse-graph-${Environment}
         GATEHOUSE_EVENT_BUS_NAME: !Sub gatehouse-events-${Environment}
-        GATEHOUSE_BEDROCK_MODEL_ID: amazon.nova-micro-v1:0
+        GATEHOUSE_BEDROCK_MODEL_ID: apac.amazon.nova-micro-v1:0
         POWERTOOLS_METRICS_NAMESPACE: Gatehouse
 
 Resources:
@@ -111,7 +111,12 @@ Resources:
                 - bedrock:InvokeModel
                 - bedrock:InvokeModelWithResponseStream
               # Foundation-model ARN carries an empty account by design.
-              Resource: !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0
+              # The inference-profile ARN is required because on-demand
+              # invocation of nova-micro from ap-south-1 routes through the
+              # apac system-defined profile, and IAM must authorize that ARN.
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0
+                - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/apac.amazon.nova-micro-v1:0
 
   DigestFunction:
     Type: AWS::Serverless::Function

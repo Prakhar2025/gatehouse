@@ -76,7 +76,9 @@ class Settings(BaseSettings):
     cases_table_name: str = "gatehouse-cases-staging"
     graph_table_name: str = "gatehouse-graph-staging"
     event_bus_name: str = "gatehouse-events-staging"
-    bedrock_model_id: str = "amazon.nova-micro-v1:0"
+    # apac system-defined inference profile: on-demand invocation of
+    # nova-micro is unsupported from ap-south-1; the profile routes it.
+    bedrock_model_id: str = "apac.amazon.nova-micro-v1:0"
 
     @model_validator(mode="after")
     def _bands_ordered(self) -> Settings:
