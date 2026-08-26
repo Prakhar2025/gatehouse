@@ -110,12 +110,12 @@ Resources:
               Action:
                 - bedrock:InvokeModel
                 - bedrock:InvokeModelWithResponseStream
-              # Foundation-model ARN carries an empty account by design.
-              # The inference-profile ARN is required because on-demand
-              # invocation of nova-micro from ap-south-1 routes through the
-              # apac system-defined profile, and IAM must authorize that ARN.
+              # The apac system-defined profile routes to any APAC region,
+              # and IAM evaluates the foundation-model ARN of whichever
+              # region served the call, so the model ARN is region-wildcarded
+              # while the profile ARN stays account- and region-scoped.
               Resource:
-                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0
+                - arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0
                 - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/apac.amazon.nova-micro-v1:0
 
   DigestFunction:
