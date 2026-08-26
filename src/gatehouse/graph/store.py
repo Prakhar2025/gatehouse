@@ -160,3 +160,18 @@ def finding_unavailable(reason: str) -> GraphFinding:
         max_taint=0.0,
         unavailable=True,
     )
+
+
+def finding_empty() -> GraphFinding:
+    """Normal empty result: the signal carried no correlatable identifiers.
+
+    Distinct from finding_unavailable on purpose. An outage must be disclosed
+    (GRAPH_UNAVAILABLE); an empty result is just an empty result. Conflating
+    them marked healthy traffic as degraded and lied in every soak report.
+    """
+    return GraphFinding(
+        identifiers=[],
+        prior_events=0,
+        max_taint=0.0,
+        unavailable=False,
+    )

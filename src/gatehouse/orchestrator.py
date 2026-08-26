@@ -35,7 +35,7 @@ from gatehouse.agents.verify import verify_signal
 from gatehouse.config import Settings, get_settings
 from gatehouse.fencing import fence
 from gatehouse.graph.hashing import extract_identifiers, hash_identifier
-from gatehouse.graph.store import GraphStore, finding_unavailable
+from gatehouse.graph.store import GraphStore, finding_empty, finding_unavailable
 from gatehouse.logging_utils import get_logger
 from gatehouse.packs.schemas import CountryPack
 from gatehouse.spend import SpendMeter
@@ -107,7 +107,15 @@ async def investigate(
     # 2) triage (model + rules, budget-gated inside its own boundary)
     try:
         with _stage(trace, "triage"):
-            triage = await run_triage(case_id, raw_text, fenced, pack, meter=meter, model=model)
+            triage = await run_triage(
+                case_id,
+                raw_text,
+                fenced,
+                pack,
+                meter=meter,
+                model=model,
+                screen_floor=s.rule_screen_floor,
+            )
     except Exception as exc:
         log.warning("triage_stage_failed", extra={"extra_fields": {"error": type(exc).__name__}})
         triage = TriageResult(
@@ -147,7 +155,9 @@ async def investigate(
                 store.upsert_event(hashed, taint_base=taint_base, case_id=case_id)
                 graph = store.finding_for([h for _, h in hashed])
             else:
-                graph = finding_unavailable("no identifiers in signal")
+                # No identifiers to correlate is a NORMAL empty result, not
+                # an outage: flagging it marked healthy cases degraded.
+                graph = finding_empty()
     except Exception as exc:
         log.warning("graph_stage_failed", extra={"extra_fields": {"error": type(exc).__name__}})
         graph = finding_unavailable(f"graph_error:{type(exc).__name__}")

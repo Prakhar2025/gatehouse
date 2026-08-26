@@ -1,0 +1,159 @@
+{
+  "cases": 480,
+  "degraded_case_share": 0.0,
+  "failure_taxonomy": {
+    "degraded_mode_cause": 0,
+    "labeling_dispute": 0,
+    "language_gap": 0,
+    "missed_pattern_family": 0,
+    "orchestration_bug": 0,
+    "threshold_miscalibration": 0,
+    "verification_tool_gap": 0
+  },
+  "false_gate_rate": 0.0,
+  "fn": 0,
+  "fp": 0,
+  "model_mode": "local_mock_rules",
+  "noise_leak_note": "notification path not exercised in local_mock; rate not measurable here",
+  "noise_leak_rate": 0.0,
+  "pack_sha256": "b9b8cfe08ca61d73764dccd12cff8c4e37563eb06583ee738b6616e6cf65af9e",
+  "pack_version": "0.2.0",
+  "per_stratum": [
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 72,
+      "stratum": "kyc_scam",
+      "tn": 0,
+      "tp": 72
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 48,
+      "stratum": "digital_arrest",
+      "tn": 0,
+      "tp": 48
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 56,
+      "stratum": "investment",
+      "tn": 0,
+      "tp": 56
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "lottery",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 48,
+      "stratum": "upi_collect_fraud",
+      "tn": 0,
+      "tp": 48
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "courier_scam",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "job_task_scam",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 16,
+      "stratum": "relative_impersonation",
+      "tn": 0,
+      "tp": 16
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 24,
+      "stratum": "legit_bank_offer",
+      "tn": 24,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 20,
+      "stratum": "delivery_update",
+      "tn": 20,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 20,
+      "stratum": "govt_notice_legit",
+      "tn": 20,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 28,
+      "stratum": "family_chatter",
+      "tn": 28,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 28,
+      "stratum": "newsletter_promo",
+      "tn": 28,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 16,
+      "stratum": "otp_forward",
+      "tn": 16,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 8,
+      "stratum": "govt_legit_trap",
+      "tn": 8,
+      "tp": 0
+    }
+  ],
+  "precision": 1.0,
+  "precision_ci": [
+    0.9887,
+    1.0
+  ],
+  "recall": 1.0,
+  "recall_ci": [
+    0.9887,
+    1.0
+  ],
+  "runner": "full-pipeline-local-mock-v1",
+  "screen_floor": 0.4,
+  "seed": 4207,
+  "split": "dev",
+  "tn": 144,
+  "tp": 336
+}

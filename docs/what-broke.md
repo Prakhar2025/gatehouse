@@ -141,3 +141,17 @@ Root cause: ScrubbedJsonFormatter read structured context only from record.gh_ex
 Fix: the formatter accepts both attribute names and routes them through the same scrubbed ctx block; regression test drives a record carrying extra_fields with a sentinel P1 value and asserts the fields arrive scrubbed.
 Prevention: when a formatter consumes a private attribute contract, a test must cover every documented way callers attach context, not just the helper path; silent field-dropping in observability code fails exactly as loudly as no observability at all.
 Phase: deployment
+
+## [2026-08-26] healthy identifier-free signals were reported as graph outages
+Symptom: the first full dev-split run showed a 96 percent degraded-case share, every message without a VPA, phone, or UTR carried a GRAPH_UNAVAILABLE flag, and 32 misses were attributed to a degradation that never happened.
+Root cause: finding_unavailable doubled as the constructor for the normal empty result. A signal with nothing to correlate is not an outage, but one flag served both meanings, so honest-case statistics absorbed outage noise and soak reports would have lied from day one.
+Fix: finding_empty() is the explicit no-correlation outcome with unavailable False; unavailable stays reserved for real store failures. The chaos suite now pins both polarities: a dead store must disclose GRAPH_UNAVAILABLE and an empty result must never.
+Prevention: degradation vocabulary names the dependency that FAILED, never the data that was absent; whenever a finding type has success and failure shapes, row tests assert both sides.
+Phase: evaluation layer
+
+## [2026-08-26] weekly soak report crashed on an empty window instead of reporting it
+Symptom: build_weekly_report over zero records raised a pydantic ValidationError because quiet_week arrived as [] instead of a bool; the windowing test caught it before any live week existed.
+Root cause: python and chains return the falsy operand object itself, so [] and escalations == 0 evaluated to [], which the strict bool field rejected. The broader class is truthy-looking expressions feeding typed boundaries.
+Fix: the volume predicate is wrapped in bool(...); an empty window is explicitly not a quiet week because no volume was screened to prove the value.
+Prevention: any expression assigned to a strict bool field gets an explicit bool(...) or comparison construction; the windowing test drives the zero-record week permanently.
+Phase: evaluation layer

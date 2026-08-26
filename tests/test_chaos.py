@@ -133,7 +133,11 @@ class TestRow2VerifyLost:
 
 class TestRow3GraphStoreDown:
     def test_graph_unavailable_finding_case_continues(self) -> None:
-        text = "SBI alert, verify at http://sbi-kyc-verify.top"
+        # The fixture must carry an identifier the conservative extraction
+        # grammar accepts (a phone here). URLs are deliberately not extracted,
+        # so a URL-bearing signal reaches the empty branch and can never
+        # exercise the outage path.
+        text = "Pay 50000 immediately to agent 9876501234 or account freezes"
         result = _investigate(text, store=_DeadStore())
         assert result.graph_finding is not None
         assert result.graph_finding.unavailable is True
@@ -143,6 +147,16 @@ class TestRow3GraphStoreDown:
         # The case still completes with a defensible verdict from surviving
         # evidence; weaker graph input never inflates confidence.
         assert result.verdict in ("SCAM", "SUSPICIOUS", "SAFE")
+
+    def test_empty_result_is_not_an_outage(self) -> None:
+        """A signal without correlatable identifiers produces a normal empty
+        finding. Marking it unavailable polluted degraded-mode statistics and
+        mislabeled healthy traffic as an outage in every soak report."""
+        result = _investigate("sharing the saturday family dinner photos", store=_DeadStore())
+        assert result.graph_finding.unavailable is False
+        pkg = result.package
+        assert pkg is not None
+        assert "GRAPH_UNAVAILABLE" not in pkg.degraded_flags
 
     def test_dead_store_is_actually_exercised(self) -> None:
         """An identifier-bearing message reaches the dead store and still
