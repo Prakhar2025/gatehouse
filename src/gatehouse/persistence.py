@@ -73,6 +73,7 @@ class CaseStore:
         now: float | None = None,
     ) -> dict[str, Any]:
         """Persist the guardian package. ConditionExpression makes retries safe."""
+        ts = now if now is not None else time.time()
         keys = case_keys(household_id, case_id)
         item: dict[str, Any] = {
             "pk": {"S": keys.pk},
@@ -83,7 +84,10 @@ class CaseStore:
             "reason_codes": {"SS": package.reason_codes or ["NONE"]},
             "spend_usd": {"N": str(spend_usd)},
             "degraded_flags": {"SS": package.degraded_flags or ["NONE"]},
-            "expires_at": {"N": str(_ttl(_CASE_TTL_DAYS, now))},
+            # Creation timestamp drives the weekly soak report windows;
+            # without it the report cannot bucket cases into weeks.
+            "created_at": {"N": str(int(ts))},
+            "expires_at": {"N": str(_ttl(_CASE_TTL_DAYS, ts))},
         }
         return self._client.put_item(
             TableName=self._table,
