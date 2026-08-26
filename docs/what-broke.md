@@ -85,3 +85,10 @@ Root cause: consumed, expires_at, and taint are DynamoDB reserved keywords used 
 Fix: all expressions now use ExpressionAttributeNames placeholders across binding, graph, and persistence stores. New conftest guard fails any test-recorded Dynamo call carrying a bare reserved word, so this defect class can no longer reach main.
 Prevention: fakes must encode the real service's grammar rules or a contract test must; green-on-fake proves nothing about wire-format validation.
 Phase: channels layer
+
+## [2026-08-26] pack path assumed one filesystem shape and broke every lambda invocation
+Symptom: every live webhook call 500ed at runtime composition with pack file not found: /var/packs/in/pack.yaml, while the suite stayed green.
+Root cause: _default_pack_path derived the repo layout from __file__ parents and never considered that under Lambda the package sits at /var/task/gatehouse with packs/ as its sibling. The lookup landed on /var instead of /var/task.
+Fix: candidate list covering repo root layout, lambda task-root sibling layout, and a future layer mount; first existing candidate wins, env override still absolute. Path tests now pin all three layouts so drift fails in CI.
+Prevention: any path derived from __file__ must have a test per deployment filesystem shape, not just the developer machine.
+Phase: channels layer

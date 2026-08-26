@@ -132,13 +132,32 @@ def reset_runtime() -> None:
     _RUNTIME = None
 
 
+def _pack_candidates(package_dir: Path) -> list[Path]:
+    """Pack locations across the three real deployment layouts.
+
+    Repo dev: src/gatehouse/runtime.py, pack two dirs up at <root>/packs.
+    Lambda: /var/task/gatehouse/runtime.py, pack one dir up next to it.
+    Layer mounts, if ever used, appear at /opt/packs/.
+    """
+    return [
+        package_dir.parent.parent / "packs" / "in" / "pack.yaml",
+        package_dir.parent / "packs" / "in" / "pack.yaml",
+        Path("/opt/packs/in/pack.yaml"),
+    ]
+
+
 def _default_pack_path() -> Path:
-    """Pack location: override via GATEHOUSE_PACK_PATH (Lambda layer /opt),
-    else the repo layout for local dev and tests."""
+    """Pack location: override via GATEHOUSE_PACK_PATH wins, else first
+    candidate that exists. If none exist, the repo-layout candidate comes
+    back so load_pack raises a PackError naming a concrete path."""
     override = os.environ.get("GATEHOUSE_PACK_PATH")
     if override:
         return Path(override)
-    return Path(__file__).resolve().parents[2] / "packs" / "in" / "pack.yaml"
+    candidates = _pack_candidates(Path(__file__).resolve().parent)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return candidates[0]
 
 
 _PACK_CACHE: dict[str, CountryPack] = {}
