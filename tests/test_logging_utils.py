@@ -81,3 +81,32 @@ def test_extra_context_scrubbed_recursively() -> None:
     raw = formatter.format(record)
     assert SENTINEL_PHONE not in raw
     assert SENTINEL_VPA not in raw
+
+
+def test_extra_fields_context_reaches_payload_scrubbed() -> None:
+    """Regression: direct log.info(extra={"extra_fields": ...}) call sites
+    had their entire context block silently dropped by the formatter, which
+    only read gh_extra. Production case_trace lines emitted empty until this
+    was caught live."""
+    formatter = ScrubbedJsonFormatter()
+    logger = logging.getLogger("gatehouse.test.extra_fields")
+    record = logger.makeRecord(
+        name="gatehouse.test.extra_fields",
+        level=logging.INFO,
+        fn="t",
+        lno=1,
+        msg="case_trace",
+        args=(),
+        exc_info=None,
+    )
+    record.extra_fields = {
+        "case_id": "abc123",
+        "facts": {"verdict": "SCAM", "contact": SENTINEL_PHONE},
+        "stages": [{"stage": "triage", "status": "ok"}],
+    }
+    raw = formatter.format(record)
+    payload = json.loads(raw)
+    ctx = payload["ctx"]
+    assert ctx["case_id"] == "abc123"
+    assert ctx["facts"]["verdict"] == "SCAM"
+    assert SENTINEL_PHONE not in raw  # scrubbing applies to this path too

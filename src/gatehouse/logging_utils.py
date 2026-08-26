@@ -65,6 +65,12 @@ class ScrubbedJsonFormatter(logging.Formatter):
             "msg": scrub_p1(record.getMessage()),
         }
         extra: dict[str, Any] | None = getattr(record, "gh_extra", None)
+        if extra is None:
+            # Callers using plain logging (not GatehouseLogger.event) attach
+            # context under extra_fields; both names feed the same scrubbed
+            # ctx block. Before this acceptance the whole ctx block was
+            # silently dropped on every direct log.info call site.
+            extra = getattr(record, "extra_fields", None)
         if isinstance(extra, dict):
             payload["ctx"] = {
                 key: _scrub_value(val)
