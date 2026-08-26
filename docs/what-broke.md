@@ -120,3 +120,10 @@ Root cause: the issuer rule had one polarity (FAIL on spoof) and no PASS polarit
 Fix: issuer claim adjudication now has both outcomes, PASS with weight 0.9 when links resolve inside the claimed issuer's domain, FAIL on spoof; the guardian gains an issuer-verified kill switch that returns SAFE with ISSUER_VERIFIED when every domain finding passes and the issuer claim passes.
 Prevention: every rule must define both its positive and negative outcome; a check that can only add risk accumulates false positives without bound.
 Phase: channels layer
+
+## [2026-08-26] private schema class name broke every structured model call
+Symptom: triage with the real Bedrock model raised tool-not-found in the agent loop and no-valid-tool-use at the model interface; spend stayed zero and the loop degraded to rules-only.
+Root cause: strands registers the structured-output schema as a tool named after the CLASS. The class was _TriageModel with a leading underscore; Nova called the tool TriageModel, the names never matched, and both call paths failed on lookup.
+Fix: schema classes are public (TriageModel); triage calls the model structured_output interface directly instead of the Agent loop, which also removes a needless agent round trip.
+Prevention: any class registered as a bedrock tool via pydantic conversion must have a public name; add a live-model smoke test to CI-parity gates so this fails in seconds locally, not in production logs.
+Phase: deployment

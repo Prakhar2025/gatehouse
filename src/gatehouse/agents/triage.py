@@ -1,6 +1,6 @@
 """Triage agent: first pass over every fenced signal (doc 04 section 3).
 
-Runs a real Strands Agent with structured output against the configured model.
+Runs a real model with structured output against the configured provider.
 In LOCAL_MOCK mode the model is MockModel and nothing leaves the machine; in
 staging/prod it is BedrockModel with Nova Micro. Either way the prompt, schema,
 parsing, and policy mapping are identical, which is what makes eval results
@@ -44,7 +44,7 @@ _PAY_RE = re.compile(r"(?i)\b(upi|pay now|payment|पेमेंट|भुग�
 _URGENCY_RE = re.compile(r"(?i)\b(today|immediately|urgent|expires? (?:today|now)|अभी|आज|तुरंत)\b")
 
 
-class _TriageModel(BaseModel):
+class TriageModel(BaseModel):
     """What we force the LLM to return."""
 
     scam_likelihood: float = Field(ge=0.0, le=1.0)
@@ -78,7 +78,6 @@ async def run_triage(
     model: Any = None,
 ) -> TriageResult:
     """Triage one signal. Falls back to RULE_ONLY when budget or model fails."""
-    from strands import Agent  # local import keeps module import cheap for tests
 
     rule = classify_text(raw_text, pack)
     degraded: list[str] = []
@@ -89,18 +88,33 @@ async def run_triage(
     allow_call = meter.allow() if meter else True
     if allow_call and model is not None:
         try:
-            agent = Agent(model=model, system_prompt=_SYSTEM_PROMPT)
-            result = await agent.invoke_async(fenced.wrapped, structured_output_model=_TriageModel)
-            parsed = getattr(result, "structured_output", None)
-            if isinstance(parsed, _TriageModel):
+            # The model interface is used directly: the Agent loop registers
+            # the structured-output model as a tool it then cannot resolve
+            # (strands 1.53), while the model-level call returns the parsed
+            # pydantic instance in one round trip. MockModel speaks the same
+            # interface, so tests and LOCAL_MOCK evals are unaffected.
+            messages = [{"role": "user", "content": [{"text": fenced.wrapped}]}]
+            parsed: TriageModel | None = None
+            usage: dict[str, Any] = {}
+            async for event in model.structured_output(
+                TriageModel, messages, system_prompt=_SYSTEM_PROMPT
+            ):
+                if "output" in event:
+                    parsed = event["output"]
+                meta = event.get("event", {}).get("metadata", {})
+                if meta:
+                    usage = meta.get("usage", {})
+            if isinstance(parsed, TriageModel):
                 scam_likelihood = float(parsed.scam_likelihood)
                 llm_reason = parsed.reason_code[:60]
-                if meter is not None and result.metrics is not None:
-                    acc = result.metrics.accumulated_usage
-                    in_tok = int(acc.get("inputTokens", 0))
-                    out_tok = int(acc.get("outputTokens", 0))
-                    model_id = str(getattr(result, "_model_id", "") or "mock-model")
-                    meter.record("triage", model_id, in_tok, out_tok)
+                if meter is not None:
+                    cfg: dict[str, Any] = model.get_config() if hasattr(model, "get_config") else {}
+                    meter.record(
+                        "triage",
+                        str(cfg.get("model_id", "bedrock")),
+                        int(usage.get("inputTokens", 0)),
+                        int(usage.get("outputTokens", 0)),
+                    )
         except (BudgetExceeded, Exception) as exc:
             degraded.append("TRIAGE_MODEL_FALLBACK")
             llm_reason = f"model_error:{type(exc).__name__}"
