@@ -192,6 +192,33 @@ class TestDynamoBindingStore:
         with pytest.raises(AlreadyLinkedError):
             store.consume_invite(invite.code, "telegram", "5500099", now=1001.0)
 
+    def test_condition_failure_on_consume_translates_to_invite_error(self) -> None:
+        """Expired or raced invites raise the contract error, not botocore's."""
+        from botocore.exceptions import ClientError
+
+        from gatehouse.channels.binding import DynamoBindingStore, InviteError
+
+        class FakeClient(_FakeDynamo):
+            def update_item(self, **kwargs: Any) -> dict[str, Any]:
+                names = kwargs.get("ExpressionAttributeNames", {})
+                if names.get("#c") == "consumed":
+                    raise ClientError(
+                        {
+                            "Error": {
+                                "Code": "ConditionalCheckFailedException",
+                                "Message": "conditional request failed",
+                            }
+                        },
+                        "UpdateItem",
+                    )
+                return super().update_item(**kwargs)
+
+        fake = FakeClient()
+        store = DynamoBindingStore(fake, "gatehouse-bindings")
+        invite = store.issue_invite("fam-1", now=1000.0)
+        with pytest.raises(InviteError):
+            store.consume_invite(invite.code, "telegram", "5500100", now=1001.0)
+
     def test_lookup_and_unlink(self) -> None:
         from gatehouse.channels.binding import DynamoBindingStore
 

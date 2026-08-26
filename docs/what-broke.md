@@ -99,3 +99,10 @@ Root cause: the in-memory store raises AlreadyLinkedError on the failed uniquene
 Fix: the conditional link write translates ConditionalCheckFailedException into AlreadyLinkedError, matching the memory backend. Regression test drives a fake client that raises the real botocore error shape.
 Prevention: every store method that can fail must document which contract exception escapes; backend parity belongs in tests, not hope.
 Phase: channels layer
+
+## [2026-08-26] telegram retry storm fed by non-200 answers on member errors
+Symptom: an expired-code /start produced a 500, Telegram re-delivered the same update indefinitely (pending_update_count climbing), and the member saw silence instead of the expiry message.
+Root cause: two defects stacked. The consume-side condition failure escaped as raw botocore error (backend parity gap, same class as the link-write bug), and the route answered 500 for what is a member-correctable condition, which Telegram treats as retry-forever.
+Fix: consume_invite translates ConditionalCheckFailedException to InviteError like the memory backend, and the route answers 200 on loop failures with the error logged in full, so a bad update is dropped once and recorded, never retried into a storm.
+Prevention: member-correctable conditions must map to member-facing answers, never transport failures; webhook contracts retry, so any non-200 must mean our infrastructure is broken, not the caller's input.
+Phase: channels layer

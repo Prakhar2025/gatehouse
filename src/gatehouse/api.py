@@ -62,15 +62,15 @@ async def telegram_webhook(request: Request) -> JSONResponse:
         return JSONResponse(status_code=401, content={"error": "rejected"})
 
     # Live loop: binding check, dedupe, investigation, bundle, escalation.
-    # Always 200 from here: Telegram retries non-2xx webhooks, and refusal
-    # (unlinked sender) is a delivered answer, not a transport failure.
     try:
         outcome = await handle_telegram_signal(signal)
     except Exception as exc:
-        # Full traceback at ERROR so CloudWatch never truncates the raise site;
-        # the member still gets a 200-shaped failure upstream of this log.
+        # Full traceback at ERROR so CloudWatch never truncates the raise
+        # site. The response is still 200: Telegram retries non-2xx webhooks
+        # indefinitely, and one bad payload must never become a poison-
+        # message storm. The failure is recorded; the update is dropped.
         log.error("webhook_loop_failed", extra={"extra_fields": {"error": str(exc)}}, exc_info=True)
-        return JSONResponse(status_code=500, content={"error": "loop failed"})
+        return JSONResponse(status_code=200, content={"ok": False, "error": "loop failed"})
     log.info(
         "signal_processed",
         extra={

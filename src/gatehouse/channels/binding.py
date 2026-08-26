@@ -161,22 +161,31 @@ class DynamoBindingStore:
         self, code: str, channel: str, channel_id: str, now: float | None = None
     ) -> Binding:
         now_f = now if now is not None else time.time()
-        resp = self._client.update_item(
-            TableName=self._table,
-            Key={"pk": {"S": f"INVITE#{code}"}, "sk": {"S": "META"}},
-            # consumed and expires_at carry no bare names in the grammar:
-            # DynamoDB reserves both keywords, and only the live service
-            # validates expressions (in-memory fakes accept anything).
-            UpdateExpression=("SET #c = :true"),
-            ConditionExpression=("attribute_exists(pk) AND #c = :false AND #e > :now"),
-            ExpressionAttributeNames={"#c": "consumed", "#e": "expires_at"},
-            ExpressionAttributeValues={
-                ":true": {"BOOL": True},
-                ":false": {"BOOL": False},
-                ":now": {"N": str(int(now_f))},
-            },
-            ReturnValues="ALL_NEW",
-        )
+        # consumed and expires_at carry no bare names in the grammar:
+        # DynamoDB reserves both keywords, and only the live service
+        # validates expressions (in-memory fakes accept anything). A failed
+        # condition (unknown, consumed, or expired code) translates to the
+        # same InviteError the memory backend raises; raw botocore errors
+        # must never escape past the runtime contract.
+        try:
+            resp = self._client.update_item(
+                TableName=self._table,
+                Key={"pk": {"S": f"INVITE#{code}"}, "sk": {"S": "META"}},
+                UpdateExpression=("SET #c = :true"),
+                ConditionExpression=("attribute_exists(pk) AND #c = :false AND #e > :now"),
+                ExpressionAttributeNames={"#c": "consumed", "#e": "expires_at"},
+                ExpressionAttributeValues={
+                    ":true": {"BOOL": True},
+                    ":false": {"BOOL": False},
+                    ":now": {"N": str(int(now_f))},
+                },
+                ReturnValues="ALL_NEW",
+            )
+        except ClientError as exc:
+            name = exc.response.get("Error", {}).get("Code", "")
+            if name == "ConditionalCheckFailedException":
+                raise InviteError("invite code invalid or expired") from exc
+            raise
         attrs = resp.get("Attributes", {})
         household_id = attrs.get("household_id", {}).get("S", "")
         if not household_id:
