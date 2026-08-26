@@ -134,4 +134,12 @@ def build_reply_verdict(package_verdict: str, reason_codes: list[str]) -> str:
             "🤔 We found some warning signs here and are checking deeper.\n"
             "Hold off on any payment until your guardian confirms."
         )
+    if package_verdict == "NEEDS_HUMAN":
+        # Honest incomplete answer (failure matrix row 2): never a fake SAFE.
+        # The guardian gets the case through the review path.
+        return (
+            "🛈 We could not fully verify this message right now. "
+            "It has been sent to your family guardian for review. "
+            "Until then, do not pay or share OTPs."
+        )
     return "✅ Nothing harmful found in this message."

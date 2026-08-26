@@ -36,12 +36,15 @@ def compose_package(
     findings = list(verify_findings)
     reason_codes: list[str] = []
     evidence: list[str] = []
-    # Model degradation must survive to the bundle: a RULE_ reason with a
-    # model configured means the model leg failed; a model_error prefix
-    # means it failed loudly. Either way the consumer sees it.
+    # Degradation must survive to the bundle: a RULE_ reason with a model
+    # configured means the model leg failed; model_error means it failed
+    # loudly; budget_refused means the breaker stopped it. None of these may
+    # reach a human invisible (charter principle 5).
     degraded: list[str] = []
     if triage.reason_code.startswith("model_error:"):
         degraded.append("TRIAGE_MODEL_FALLBACK")
+    elif triage.reason_code == "budget_refused":
+        degraded.append("TRIAGE_BUDGET_REFUSED")
 
     hard_fails = [f for f in findings if f.result == "FAIL"]
     inconclusives = [f for f in findings if f.result == "INCONCLUSIVE"]

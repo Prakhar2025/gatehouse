@@ -80,7 +80,6 @@ async def run_triage(
     """Triage one signal. Falls back to RULE_ONLY when budget or model fails."""
 
     rule = classify_text(raw_text, pack)
-    degraded: list[str] = []
 
     scam_likelihood: float | None = None
     llm_reason = ""
@@ -115,12 +114,17 @@ async def run_triage(
                         int(usage.get("inputTokens", 0)),
                         int(usage.get("outputTokens", 0)),
                     )
-        except (BudgetExceeded, Exception) as exc:
-            degraded.append("TRIAGE_MODEL_FALLBACK")
-            llm_reason = f"model_error:{type(exc).__name__}"
+        except Exception as exc:
+            # Governance and model faults degrade DIFFERENTLY and visibly:
+            # a breaker refusal is not a model failure, and neither may be
+            # silent (charter principle 5).
+            if isinstance(exc, BudgetExceeded):
+                llm_reason = "budget_refused"
+            else:
+                llm_reason = f"model_error:{type(exc).__name__}"
     else:
         if not allow_call:
-            degraded.append("TRIAGE_BUDGET_REFUSED")
+            llm_reason = "budget_refused"
 
     # Deterministic features always computed (they are free).
     payment_intent = bool(_PAY_RE.search(raw_text))

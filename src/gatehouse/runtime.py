@@ -31,7 +31,7 @@ from gatehouse.channels.binding import (
     UnlinkedSenderError,
     verify_sender,
 )
-from gatehouse.channels.dedupe import DedupeStore, DynamoDedupeStore, InMemoryDedupeStore
+from gatehouse.channels.dedupe import DedupeHit, DedupeStore, DynamoDedupeStore, InMemoryDedupeStore
 from gatehouse.channels.events import GatewayEvent, build_envelope
 from gatehouse.channels.evidence import (
     BundleStore,
@@ -48,6 +48,7 @@ from gatehouse.channels.notify import (
 )
 from gatehouse.channels.telegram import build_reply_verdict
 from gatehouse.config import Settings, get_settings
+from gatehouse.fencing import contains_canary
 from gatehouse.graph.store import GraphStore
 from gatehouse.logging_utils import get_logger, scrub_p1
 from gatehouse.orchestrator import CaseResult, investigate
@@ -55,10 +56,17 @@ from gatehouse.packs.loader import load_pack
 from gatehouse.packs.schemas import CountryPack
 from gatehouse.persistence import CaseStore
 from gatehouse.spend import SpendMeter
+from gatehouse.tracing import CaseTrace
 
 log = get_logger("gatehouse.runtime")
 
-_VERDICT_TO_URGENCY = {"SCAM": "EMERGENCY", "SUSPICIOUS": "DECISION"}
+_VERDICT_TO_URGENCY = {
+    "SCAM": "EMERGENCY",
+    "SUSPICIOUS": "DECISION",
+    # Honest incomplete cases go to the guardian review queue too: the member
+    # reply promises a human look, this makes that promise true.
+    "NEEDS_HUMAN": "DECISION",
+}
 
 
 class PipelineOutcome:
@@ -301,6 +309,7 @@ async def run_pipeline(
     meter: SpendMeter | None = None,
     now: float | None = None,
     has_media: bool = False,
+    trace: CaseTrace | None = None,
 ) -> PipelineOutcome:
     """Full live loop for one accepted, bound signal."""
     started = time.perf_counter()
@@ -319,11 +328,18 @@ async def run_pipeline(
     # duplicates. Content-based hashing returns with the OCR normalize stage.
     media_only = has_media and not text.strip()
     case_id = new_case_id()
-    hit = (
-        None
-        if media_only
-        else rt.dedupe.check_and_record(channel, household_id, text, case_id, now=now)
-    )
+    hit: DedupeHit | None = None
+    try:
+        hit = (
+            None
+            if media_only
+            else rt.dedupe.check_and_record(channel, household_id, text, case_id, now=now)
+        )
+    except Exception as exc:
+        # Dedupe is an availability optimization, not a correctness gate.
+        # A store outage must not 500 the member's forward; the case runs
+        # unsuppressed (matrix row 6 degraded shape).
+        log.warning("dedupe_check_failed", extra={"extra_fields": {"error": type(exc).__name__}})
     if hit is not None:
         return PipelineOutcome(
             status="duplicate",
@@ -373,9 +389,12 @@ async def run_pipeline(
         settings=rt.settings,
         model=rt.model,
         meter=meter,
+        trace=trace,
     )
     if media_flags:
         result.reason_codes = list(result.reason_codes) + media_flags
+    reply = build_reply_verdict(result.verdict, result.reason_codes)
+    reply = apply_canary_guard(result, reply)
 
     # 5) persist evidence bundle (+ atomic verdict write when backed).
     _write_bundle(rt, result, household_id, channel, text)
@@ -390,7 +409,6 @@ async def run_pipeline(
     # 6) guardian escalation (SCAM bypasses quiet hours as EMERGENCY).
     escalated = _escalate(rt, result, household_id, channel, case_id, panic, now=now)
 
-    reply = build_reply_verdict(result.verdict, result.reason_codes)
     return PipelineOutcome(
         status="investigated",
         reply_text=reply,
@@ -401,6 +419,27 @@ async def run_pipeline(
         latency_s=time.perf_counter() - started,
         escalated=escalated,
         spend_usd=result.spend_usd,
+    )
+
+
+def apply_canary_guard(result: CaseResult, reply: str) -> str:
+    """Injection tripwire on member-visible artifacts (doc 08 section 4).
+
+    The canary exists to never leave the case. Its appearance anywhere
+    member-visible means the fence was defeated or parroted; the artifact is
+    replaced with a safe refusal and the case carries CANARY_TRIP for the
+    CRITICAL path.
+    """
+    if not contains_canary(reply, result.canary):
+        return reply
+    log.error(
+        "canary_leak_detected",
+        extra={"extra_fields": {"case_id": result.case_id, "surface": "member_reply"}},
+    )
+    result.reason_codes = [*result.reason_codes, "CANARY_TRIP"]
+    result.degraded_flags = [*result.degraded_flags, "CANARY_TRIP"]
+    return (
+        "⚠️ We could not complete the check on this message. Your family guardian has been notified."
     )
 
 
@@ -554,6 +593,7 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
             reply_text=refusal,
             latency_s=time.perf_counter() - started,
         )
+    trace = CaseTrace(case_id="", channel="telegram")
     outcome = await run_pipeline(
         rt,
         channel="telegram",
@@ -562,7 +602,12 @@ async def handle_telegram_signal(signal: Any, settings: Settings | None = None) 
         text=signal.text,
         is_forward=signal.is_forward,
         has_media=signal.has_media,
+        trace=trace,
     )
+    if outcome.case_id:
+        trace.case_id = outcome.case_id
+    trace.note("status", outcome.status)
+    trace.emit(status=outcome.status)
     _send_member_reply(rt.settings, str(signal.chat_id), outcome.reply_text)
     return outcome
 
@@ -575,14 +620,21 @@ async def handle_email_signal(
     allowed = {a.strip().lower() for a in rt.settings.email_alias_allowlist.split(",") if a.strip()}
     if alias.lower() not in allowed:
         return PipelineOutcome(status="refused", reply_text="")
-    return await run_pipeline(
+    trace = CaseTrace(case_id="", channel="email")
+    outcome = await run_pipeline(
         rt,
         channel="email",
         household_id=f"alias:{alias.lower()}",
         sender_name=sender[:40],
         text=text,
         is_forward=False,
+        trace=trace,
     )
+    if outcome.case_id:
+        trace.case_id = outcome.case_id
+    trace.note("status", outcome.status)
+    trace.emit(status=outcome.status)
+    return outcome
 
 
 def digest_tick() -> int:

@@ -85,5 +85,6 @@ class TestBudgetRefusal:
         text = "kyc expired pay now"
         f = fence(text, "s6")
         result = go(run_triage("s6", text, f, pack, meter=meter, model=model))
-        # model must NOT have been consulted; rules still classify
-        assert result.reason_code.startswith("RULE_") or "BUDGET" in result.reason_code
+        # model must NOT have been consulted; rules still classify and the
+        # breaker refusal stays visible in the reason code.
+        assert result.reason_code.startswith("RULE_") or result.reason_code == "budget_refused"

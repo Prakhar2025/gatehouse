@@ -127,3 +127,10 @@ Root cause: strands registers the structured-output schema as a tool named after
 Fix: schema classes are public (TriageModel); triage calls the model structured_output interface directly instead of the Agent loop, which also removes a needless agent round trip.
 Prevention: any class registered as a bedrock tool via pydantic conversion must have a public name; add a live-model smoke test to CI-parity gates so this fails in seconds locally, not in production logs.
 Phase: deployment
+
+## [2026-08-26] chaos audit found dependency faults the pipeline would have crashed on
+Symptom: writing the P4 chaos suite against the doc 03 failure matrix showed three rows with no real boundary: an exception in verify_signal or the graph store propagated straight out of investigate() as a 500, and a DynamoDedupeStore outage raised inside run_pipeline before any investigation started.
+Root cause: only the triage stage had a try/except degradation path; verify, graph, dedupe, and bundle-write were trusted to be total even though every one of them crosses a network or data-dependency boundary. The failure matrix documented degraded behavior that no code implemented.
+Fix: every dependency-backed stage now runs inside its own fault boundary with an explicit degradation: verify loss forces NEEDS_HUMAN with VERIFICATION_UNAVAILABLE instead of a quiet SAFE, graph loss produces the GRAPH_UNAVAILABLE finding, dedupe fails open with a warning, bundle writes were already contained. Triage breaker refusals stopped being silent: the reason code carries budget_refused and the guardian maps it to TRIAGE_BUDGET_REFUSED on the package. Member replies gained an honest NEEDS_HUMAN branch and NEEDS_HUMAN escalates to the guardian review queue so the promise in the reply text is true. A canary leak into any member-visible reply is now intercepted (CANARY_TRIP) before delivery instead of detected only after.
+Prevention: the chaos suite (tests/test_chaos.py) runs every matrix row on every push; a new degraded-behavior claim in any doc must ship with its row test in the same commit.
+Phase: deployment
