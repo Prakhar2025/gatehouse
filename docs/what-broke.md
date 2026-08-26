@@ -92,3 +92,10 @@ Root cause: _default_pack_path derived the repo layout from __file__ parents and
 Fix: candidate list covering repo root layout, lambda task-root sibling layout, and a future layer mount; first existing candidate wins, env override still absolute. Path tests now pin all three layouts so drift fails in CI.
 Prevention: any path derived from __file__ must have a test per deployment filesystem shape, not just the developer machine.
 Phase: channels layer
+
+## [2026-08-26] dynamo binding store leaked raw botocore errors past the runtime contract
+Symptom: live bind of an already-linked chat returned 500 with ConditionalCheckFailedException instead of the friendly already-linked refusal.
+Root cause: the in-memory store raises AlreadyLinkedError on the failed uniqueness condition; the dynamo store let the raw ClientError escape. Two backends, two contracts.
+Fix: the conditional link write translates ConditionalCheckFailedException into AlreadyLinkedError, matching the memory backend. Regression test drives a fake client that raises the real botocore error shape.
+Prevention: every store method that can fail must document which contract exception escapes; backend parity belongs in tests, not hope.
+Phase: channels layer

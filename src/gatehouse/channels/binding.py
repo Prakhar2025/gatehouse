@@ -21,6 +21,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from botocore.exceptions import ClientError
+
 # 10 minutes is enough to type the code on the phone; long enough to survive
 # a brief Telegram outage, short enough to limit phishing window.
 DEFAULT_INVITE_TTL_SECONDS = 600
@@ -179,17 +181,25 @@ class DynamoBindingStore:
         household_id = attrs.get("household_id", {}).get("S", "")
         if not household_id:
             raise InviteError("invite consumed but no household returned")
-        # Conditional link write to enforce single-binding.
-        self._client.put_item(
-            TableName=self._table,
-            Item={
-                "pk": {"S": f"BINDING#{channel}#{channel_id}"},
-                "sk": {"S": "META"},
-                "household_id": {"S": household_id},
-                "linked_at": {"N": str(int(now_f))},
-            },
-            ConditionExpression="attribute_not_exists(pk)",
-        )
+        # Conditional link write to enforce single-binding. Translate the
+        # botocore condition failure so both backends raise the same contract
+        # exception; the in-memory store raises AlreadyLinkedError here too.
+        try:
+            self._client.put_item(
+                TableName=self._table,
+                Item={
+                    "pk": {"S": f"BINDING#{channel}#{channel_id}"},
+                    "sk": {"S": "META"},
+                    "household_id": {"S": household_id},
+                    "linked_at": {"N": str(int(now_f))},
+                },
+                ConditionExpression="attribute_not_exists(pk)",
+            )
+        except ClientError as exc:
+            name = exc.response.get("Error", {}).get("Code", "")
+            if name == "ConditionalCheckFailedException":
+                raise AlreadyLinkedError("channel already linked") from exc
+            raise
         return Binding(
             channel=channel, channel_id=channel_id, household_id=household_id, linked_at=now_f
         )

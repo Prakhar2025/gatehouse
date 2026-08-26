@@ -164,6 +164,34 @@ class TestDynamoBindingStore:
         with pytest.raises(_FakeConditionFailError):
             store.consume_invite(invite.code, "telegram", "5500013", now=1002.0)
 
+    def test_condition_failure_translates_to_already_linked(self) -> None:
+        """The live backend raises botocore's condition error; the runtime
+        contract expects AlreadyLinkedError. Both backends must agree."""
+        from botocore.exceptions import ClientError
+
+        from gatehouse.channels.binding import AlreadyLinkedError, DynamoBindingStore
+
+        class FakeClient(_FakeDynamo):
+            def put_item(self, **kwargs: Any) -> dict[str, Any]:
+                pk = kwargs.get("Item", {}).get("pk", {}).get("S", "")
+                if pk.startswith("BINDING#"):
+                    raise ClientError(
+                        {
+                            "Error": {
+                                "Code": "ConditionalCheckFailedException",
+                                "Message": "conditional request failed",
+                            }
+                        },
+                        "PutItem",
+                    )
+                return super().put_item(**kwargs)
+
+        fake = FakeClient()
+        store = DynamoBindingStore(fake, "gatehouse-bindings")
+        invite = store.issue_invite("fam-1", now=1000.0)
+        with pytest.raises(AlreadyLinkedError):
+            store.consume_invite(invite.code, "telegram", "5500099", now=1001.0)
+
     def test_lookup_and_unlink(self) -> None:
         from gatehouse.channels.binding import DynamoBindingStore
 
