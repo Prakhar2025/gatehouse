@@ -1,0 +1,106 @@
+{
+  "baseline": {
+    "false_gate_rate": 0.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "screen_floor": 0.4
+  },
+  "grid": [
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6
+  ],
+  "meets_recall_target": true,
+  "pack_version": "0.2.0",
+  "points": [
+    {
+      "false_gate_rate": 0.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "screen_floor": 0.25,
+      "tn": 144,
+      "tp": 336
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "screen_floor": 0.3,
+      "tn": 144,
+      "tp": 336
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "screen_floor": 0.35,
+      "tn": 144,
+      "tp": 336
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "screen_floor": 0.4,
+      "tn": 144,
+      "tp": 336
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "screen_floor": 0.45,
+      "tn": 144,
+      "tp": 336
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 29,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9137,
+      "screen_floor": 0.5,
+      "tn": 144,
+      "tp": 307
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 40,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.881,
+      "screen_floor": 0.55,
+      "tn": 144,
+      "tp": 296
+    },
+    {
+      "false_gate_rate": 0.0,
+      "fn": 126,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.625,
+      "screen_floor": 0.6,
+      "tn": 144,
+      "tp": 210
+    }
+  ],
+  "rationale": "min false-gate subject to recall>=target; ties: higher precision, then closest to the 0.40 baseline (no operating-point change without measured gain)",
+  "recall_target": 0.85,
+  "recommended_floor": 0.4,
+  "runner": "calibration-dev-sweep-v1"
+}
