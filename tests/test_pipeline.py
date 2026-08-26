@@ -92,6 +92,20 @@ class TestGuardian:
         pkg = compose_package(triage, [], GraphFinding(unavailable=True), s)
         assert "GRAPH_UNAVAILABLE" in pkg.degraded_flags
 
+    def test_model_error_becomes_visible_degradation(self, pack: CountryPack) -> None:
+        """A triage that fell back to rules because the model errored must
+        carry the fallback flag into the bundle; silent degradation is the
+        one thing this system never does (charter principle 5)."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="SCREEN",
+            confidence=0.6,
+            payment_intent=False,
+            reason_code="model_error:ValidationException",
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert "TRIAGE_MODEL_FALLBACK" in pkg.degraded_flags
+
 
 class TestOrchestrator:
     def test_full_pipeline_scam_flow(self, pack: CountryPack) -> None:

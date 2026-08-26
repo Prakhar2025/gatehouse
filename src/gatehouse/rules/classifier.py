@@ -21,6 +21,7 @@ policy code so thresholds can be tuned without touching detection.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from gatehouse.constants import MAX_DISTINCT_COUNTED, RULE_CORROBORATION_STEP
@@ -103,7 +104,13 @@ def classify_text(text: str, pack: CountryPack) -> RuleResult:
         base = min(1.0, strongest_weight + extra_count * RULE_CORROBORATION_STEP)
 
     payment_intent = any(token in text_lower for token in _PAYMENT_TOKENS)
-    has_url = "http://" in text_lower or "https://" in text_lower or "www." in text_lower
+    # Bare-domain detection: scam SMS drops the scheme, so "pay at x.top"
+    # still counts as a URL signal. The verify stage judges the host; here
+    # we only note that one is present.
+    bare_domain = re.search(r"\b[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}\b", text) is not None
+    has_url = (
+        bare_domain or "http://" in text_lower or "https://" in text_lower or "www." in text_lower
+    )
 
     score = base
     if payment_intent:

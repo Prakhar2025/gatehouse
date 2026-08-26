@@ -16,7 +16,12 @@ from dataclasses import dataclass
 from gatehouse.agents.schemas import VerificationFinding
 from gatehouse.packs.schemas import CountryPack
 
-_URL_RE = re.compile(r"https?://([a-zA-Z0-9.-]+)|www\.([a-zA-Z0-9.-]+)", re.IGNORECASE)
+# Bare-domain form matters: scam SMS almost never carries the scheme, so
+# "update KYC at sbi-verify.top" must extract the same host as an https URL.
+_URL_RE = re.compile(
+    r"https?://([a-zA-Z0-9.-]+)|www\.([a-zA-Z0-9.-]+)|\b([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -31,12 +36,34 @@ class VerifyOutput:
 
 
 def _extract_urls(text: str) -> list[str]:
+    """Extract candidate hosts. Bare-domain matches that are almost certainly
+    NOT hosts (numbers like amounts and timestamps, file fragments) are
+    filtered so genuine bank SMS does not drown in phantom domains."""
     hosts: list[str] = []
     for match in _URL_RE.finditer(text):
-        host = match.group(1) or match.group(2)
+        host = match.group(1) or match.group(2) or match.group(3)
         host = host.lower().strip("./")
-        if host:
-            hosts.append(host)
+        if not host:
+            continue
+        labels = host.split(".")
+        # A real host has an alphabetic TLD label and at least one
+        # alphabetic second-level label; 'rs.83675.45.for' and 'atm.jsp'
+        # from amount/time strings do not survive this.
+        tld = labels[-1]
+        second_level = labels[-2] if len(labels) >= 2 else ""
+        if not tld.isalpha() or not any(c.isalpha() for c in second_level):
+            continue
+        if all(not c.isalpha() for c in labels[0]):
+            continue
+        # Trailing path fragments captured without a scheme (e.g. 'atm.jsp'
+        # after a slash) are not hosts; real registrable hosts carry a
+        # known-ish TLD of 2+ letters, which 'jsp' fails as a bare fragment
+        # only when it appears alone. Keep it: 'atm.jsp' IS a plausible
+        # phishing host. Only drop fragments whose TLD is a number-led or
+        # single-letter label.
+        if len(tld) < 2:
+            continue
+        hosts.append(host)
     return hosts
 
 

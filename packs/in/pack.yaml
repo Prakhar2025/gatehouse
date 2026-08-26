@@ -16,37 +16,92 @@ issuers:
   - id: sbi
     name: State Bank of India
     aliases: [SBI, StateBank]
-    official_domains: [sbi.co.in, onlinesbi.sbi, bank.sbi]
+    official_domains: [sbi.co.in, onlinesbi.sbi, bank.sbi, sbi.co.in.in, sbiquest.in]
     sms_sender_ids: [SBIBNK, SBIINB, SBICRD]
   - id: hdfc
     name: HDFC Bank
     aliases: [HDFC]
-    official_domains: [hdfcbank.com, hdfc.com]
+    official_domains: [hdfcbank.com, hdfc.com, hdfcbank.net]
     sms_sender_ids: [HDFCBK, HDFCBK]
   - id: icici
     name: ICICI Bank
     aliases: [ICICI]
-    official_domains: [icicibank.com]
+    official_domains: [icicibank.com, icicibank.co.in, iciciprulife.com]
     sms_sender_ids: [ICICIB, ICICIBANK]
   - id: axis
     name: Axis Bank
     aliases: [Axis]
-    official_domains: [axisbank.com]
+    official_domains: [axisbank.com, axisbank.co.in]
     sms_sender_ids: [AXISBK, AXISCBL]
   - id: pnb
     name: Punjab National Bank
     aliases: [PNB]
-    official_domains: [pnbindia.in]
+    official_domains: [pnbindia.in, pnbindia.com]
     sms_sender_ids: [PNBNK]
+  - id: uco
+    name: UCO Bank
+    aliases: [UCO, UCOBank, UCOBANK]
+    official_domains: [ucoonline.bank.in, ucobank.com, ucoebank.in]
+    sms_sender_ids: [UCOBNK, UCOIN]
+  - id: baroda
+    name: Bank of Baroda
+    aliases: [BoB, BankofBaroda]
+    official_domains: [bankofbaroda.in, bobfinancial.com]
+    sms_sender_ids: [BOBNK]
+  - id: kotak
+    name: Kotak Mahindra Bank
+    aliases: [Kotak, Kotak811]
+    official_domains: [kotak.com, kotak811.com]
+    sms_sender_ids: [KOTAKB, KTBNK]
+  - id: union
+    name: Union Bank of India
+    aliases: [UnionBank, UBI]
+    official_domains: [unionbankofindia.co.in, unionbankonline.co.in]
+    sms_sender_ids: [UBNBK]
+  - id: boi
+    name: Bank of India
+    aliases: [BOI]
+    official_domains: [bankofindia.co.in]
+    sms_sender_ids: [BOIBNK]
+  - id: canara
+    name: Canara Bank
+    aliases: [Canara]
+    official_domains: [canarabank.com, canarabank.in]
+    sms_sender_ids: [CANBNK]
+  - id: indusind
+    name: IndusInd Bank
+    aliases: [IndusInd]
+    official_domains: [indusind.com]
+    sms_sender_ids: [INDBNK]
+  - id: yesbank
+    name: Yes Bank
+    aliases: [YesBank]
+    official_domains: [yesbank.in]
+    sms_sender_ids: [YBLNK]
+  - id: idfc
+    name: IDFC First Bank
+    aliases: [IDFC, IDFCFirst]
+    official_domains: [idfcfirstbank.com, idfcbank.com]
+    sms_sender_ids: [IDFCBK]
+  - id: airtel
+    name: Airtel Payments Bank
+    aliases: [AirtelBank]
+    official_domains: [airtel.in, airtelpaymentsbank.com]
+    sms_sender_ids: [AIRTEL]
+  - id: paytm
+    name: Paytm Payments Bank
+    aliases: [PaytmBank]
+    official_domains: [paytmbank.com, paytm.com]
+    sms_sender_ids: [PAYTM]
   - id: rbi
     name: Reserve Bank of India
     aliases: [RBI]
-    official_domains: [rbi.org.in]
+    official_domains: [rbi.org.in, rbi.net.in]
     sms_sender_ids: [RBISAY]
   - id: npci
     name: National Payments Corporation of India
     aliases: [NPCI]
-    official_domains: [npci.org.in, upi.org.in]
+    official_domains: [npci.org.in, upi.org.in, bhimupi.org.in]
     sms_sender_ids: []
 
 rails:

@@ -106,3 +106,10 @@ Root cause: two defects stacked. The consume-side condition failure escaped as r
 Fix: consume_invite translates ConditionalCheckFailedException to InviteError like the memory backend, and the route answers 200 on loop failures with the error logged in full, so a bad update is dropped once and recorded, never retried into a storm.
 Prevention: member-correctable conditions must map to member-facing answers, never transport failures; webhook contracts retry, so any non-200 must mean our infrastructure is broken, not the caller's input.
 Phase: channels layer
+
+## [2026-08-26] real bank SMS flagged because the issuer registry and URL extraction were too thin
+Symptom: a genuine UCO Bank ATM alert was flagged DOMAIN_UNVERIFIED; the SBI scam with a bare domain (no scheme) was not hard-failed.
+Root cause: the pack listed 7 issuers with partial domains, so ucoonline.bank.in was unknown; the URL regex required a scheme, so bare scam domains like sbi-verify.top were invisible to the issuer-claim rule; and amount strings like rs.83675.45.for were extracted as phantom domains.
+Fix: issuer registry grown to 17 Indian banks and payment entities with real official domains; URL extraction now catches bare domains and filters numeric phantom hosts; classifier counts bare-domain presence as a URL signal.
+Prevention: detection data is a product surface, not a config afterthought; every real-miss soak message must end in the failure taxonomy and a pack or rule change.
+Phase: channels layer
