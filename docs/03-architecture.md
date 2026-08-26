@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 01-vision, 02-product-spec |
-| Last updated | 2026-08-24 |
+| Last updated | 2026-08-26 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.3.0 | Added section 8.2: live routing verification executed 2026-08-26 from ap-south-1, corrected verify-fallback policy (us.meta profile invalid outside US regions), ritual scripted for repeat runs |
 | 0.2.0 | Replaced ASCII sketch with professional Mermaid diagrams: system context, container view, investigation sequence, case lifecycle. Added production-topology-at-scale section and model routing policy with verification requirements |
 | 0.1.0 | Initial draft |
 
@@ -267,6 +268,39 @@ Kimi K2.5, MiniMax M2.5, Grok 4.6) but are deliberately unused here: they price
 for frontier reasoning we do not need in high-volume screening paths. Cost
 discipline beats model fashion. Re-run this exact probe script at P4 exit and
 append deltas.
+
+### 8.2 P4 Live Verification Record (executed 2026-08-26, ap-south-1, converse API)
+
+Re-run of the full ritual from the DEPLOY region via the now-committed
+`scripts/routing_ritual.py` (one capped invocation each, maxTokens=16, fixed
+prompt, charter budget rules honored). Deltas against the 8.1 us-east-1 run:
+
+| Role | Model ID | Result | Latency | Detail |
+|---|---|---|---|---|
+| TRIAGE primary | `apac.amazon.nova-micro-v1:0` | PASS | 870ms | reply ok, in=7 out=2 |
+| ENGAGE/NARRATIVE primary | `apac.amazon.nova-lite-v1:0` | PASS | 409ms | reply Ok., in=7 out=3 |
+| VERIFY primary | `apac.amazon.nova-pro-v1:0` | PASS | 527ms | reply Ok., in=7 out=3 |
+| FALLBACK narrative | `openai.gpt-oss-120b-1:0` | PASS (invoked-ok) | 233ms | visible text empty at maxTokens=16, known reasoning-model shape from 8.1; production budget is >=512 |
+| FALLBACK verify | `us.meta.llama3-3-70b-instruct-v1:0` | FAIL | 104ms | invalid model identifier FROM AP-SOUTH-1: the us. system-defined inference profile does not resolve outside US regions. The 8.1 PASS was region-local and never transferred |
+| degraded-mode classifier | `zai.glm-4.7-flash` | PASS | 202ms | in=12 out=2 |
+| candidate revisit | `amazon.nova-2-lite-v1:0` | FAIL | 163ms | still unsupported on this account/region config; stays out of all chains |
+| candidate access check | `anthropic.claude-haiku-4-5` | FAIL | 79ms | access blocked on builder account; Anthropic stays out of all chains |
+| claim embeddings | `amazon.titan-embed-text-v2:0` | PASS | 148ms | 1024 dims |
+
+Policy corrections effective with this record:
+
+1. FALLBACK_VERIFY for ap-south-1 deployments is NO LONGER
+   `us.meta.llama3-3-70b-instruct-v1:0`. Until a cross-region fallback is
+   re-verified live, verify-stage model loss degrades to NEEDS_HUMAN per the
+   failure matrix (row 2), which the pipeline now implements as code.
+   Candidate replacement to be verified before adoption:
+   `apac.amazon.nova-lite-v1:0` (already PASS in-region).
+2. Every routed PRIMARY (triage, engage/narrative, verify) plus embeddings
+   resolves live from the deploy region. The routing table above section 8.1
+   remains accurate for primaries; only the verify fallback row changes.
+3. This ritual is scripted (`scripts/routing_ritual.py`) and must be re-run
+   from the deploy region on any model ID or region change; results append
+   here with dates.
 
 ## 9. Production Topology at Scale (documented, not built)
 

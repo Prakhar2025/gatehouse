@@ -72,6 +72,10 @@ def main(argv: list[str]) -> int:
 
     times: list[float] = []
     statuses: dict[str, int] = {}
+    # Unique tag per RUN: the dedupe table remembers content for the full
+    # TTL, so fixed [ref 000]-style texts make every rerun after the first
+    # short-circuit as duplicates and measure nothing.
+    run_tag = int(time.time())
     for i in range(n):
         # Cycle sample types; unique update_id AND unique text each time so
         # the run measures investigation latency, not dedupe short-circuits.
@@ -82,11 +86,11 @@ def main(argv: list[str]) -> int:
         else:
             text = SCAM_SAMPLES[i % len(SCAM_SAMPLES)]
         payload = {
-            "update_id": 90_000_000 + i,
+            "update_id": 90_000_000 + (run_tag % 8_000_000) * 20 + i,
             "message": {
                 "chat": {"id": CHAT_ID},
                 "from": {"first_name": "Riya"},
-                "text": f"{text} [ref {i:03d}]",
+                "text": f"{text} [r{run_tag} n{i:03d}]",
             },
         }
         try:
