@@ -1,4 +1,4 @@
-.PHONY: help setup check format lint type test test-cov pack-validate eval-mini eval-mini-json clean
+.PHONY: help setup check format lint type test test-cov pack-validate eval-mini eval-mini-json eval-full-json eval-calibrate-json clean
 
 help:
 	@echo "Gatehouse P1 targets"
@@ -12,6 +12,8 @@ help:
 	@echo "  pack-validate validate every country pack artifact"
 	@echo "  eval-mini     run the offline 30-case mini evaluation"
 	@echo "  eval-mini-json write docs/eval-results/mini-metrics.json"
+	@echo "  eval-full-json  run 480-case dev split, write full-dev-metrics.json"
+	@echo "  eval-calibrate-json sweep thresholds on dev split, write calibration JSON"
 
 setup:
 	py -3.12 -m venv .venv
@@ -48,6 +50,12 @@ eval-mini:
 
 eval-mini-json:
 	$(PY) -m gatehouse.evaluation.run_mini --pack packs/in/pack.yaml --json docs/eval-results/mini-metrics.json
+
+eval-full-json:
+	$(PY) -m gatehouse.evaluation.run_full --pack packs/in/pack.yaml --split dev --json docs/eval-results/full-dev-metrics.json
+
+eval-calibrate-json:
+	$(PY) -m gatehouse.evaluation.calibrate --pack packs/in/pack.yaml --json docs/eval-results/calibration-dev.json
 
 clean:
 	$(PY) -B -c "import pathlib, shutil; \

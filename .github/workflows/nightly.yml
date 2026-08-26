@@ -47,9 +47,21 @@ jobs:
           python -m gatehouse.evaluation.run_mini --pack packs/in/pack.yaml --json docs/eval-results/mini-metrics.json
           cat docs/eval-results/mini-metrics.json
 
+      - name: Offline full dev-split evaluation
+        run: |
+          python -m gatehouse.evaluation.run_full --pack packs/in/pack.yaml --split dev --json docs/eval-results/full-dev-metrics.json
+          cat docs/eval-results/full-dev-metrics.json
+
+      - name: Offline threshold calibration sweep
+        run: |
+          python -m gatehouse.evaluation.calibrate --pack packs/in/pack.yaml --json docs/eval-results/calibration-dev.json
+
       - name: Upload metrics artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mini-metrics-${{ github.run_id }}
-          path: docs/eval-results/mini-metrics.json
+          name: eval-metrics-${{ github.run_id }}
+          path: |
+            docs/eval-results/mini-metrics.json
+            docs/eval-results/full-dev-metrics.json
+            docs/eval-results/calibration-dev.json
           retention-days: 90
