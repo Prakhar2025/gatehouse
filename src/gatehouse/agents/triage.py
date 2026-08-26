@@ -24,6 +24,8 @@ from gatehouse.constants import (
     CLASS_INFO,
     CLASS_NOISE,
     CLASS_SCREEN,
+    SCORE_ESCALATE,
+    SCORE_SCREEN,
 )
 from gatehouse.fencing import FencedContent
 from gatehouse.packs.schemas import CountryPack
@@ -51,6 +53,23 @@ class TriageModel(BaseModel):
     reason_code: str = Field(min_length=3, max_length=60)
 
 
+def _band_for_rule_score(score: float, screen_floor: float = SCORE_SCREEN) -> Any:
+    """Rule-score band under the calibrated SCREEN floor.
+
+    Identical to RuleResult.rule_class at the default floor (0.40). Calibration
+    moves ONLY the SCREEN boundary; the DECISION boundary stays fixed because
+    threshold work tunes the review-queue operating point, never the
+    hard-escalation band (doc 07 section 6 discipline).
+    """
+    if score >= SCORE_ESCALATE:
+        return CLASS_DECISION
+    if score >= screen_floor:
+        return CLASS_SCREEN
+    if score > 0.0:
+        return CLASS_INFO
+    return CLASS_NOISE
+
+
 def _policy_map(scam_likelihood: float, rule_class: str) -> Any:
     """Combine model likelihood with the deterministic rule class.
 
@@ -76,6 +95,7 @@ async def run_triage(
     pack: CountryPack,
     meter: SpendMeter | None = None,
     model: Any = None,
+    screen_floor: float = SCORE_SCREEN,
 ) -> TriageResult:
     """Triage one signal. Falls back to RULE_ONLY when budget or model fails."""
 
@@ -130,9 +150,15 @@ async def run_triage(
     payment_intent = bool(_PAY_RE.search(raw_text))
     urgency = sorted({m.group(0).lower() for m in _URGENCY_RE.finditer(raw_text)})
 
-    # Final band: strongest of (model view, rule view), then structural bumps.
+    # Final band: strongest of (model view, calibrated rule view), then
+    # structural bumps. Without a model likelihood (LOCAL_MOCK, RULE_ONLY)
+    # the rule score is banded against the calibrated SCREEN floor; with one,
+    # the original floor map applies (the model leg owns its own bands).
     effective_likelihood = scam_likelihood if scam_likelihood is not None else 0.0
-    base_class = _policy_map(effective_likelihood, rule.rule_class)
+    if scam_likelihood is None:
+        base_class = _band_for_rule_score(rule.score, screen_floor)
+    else:
+        base_class = _policy_map(effective_likelihood, rule.rule_class)
     if base_class in (CLASS_NOISE, CLASS_INFO) and (rule.has_url and rule.score > 0):
         base_class = CLASS_SCREEN
     if base_class == CLASS_DECISION and payment_intent and urgency and fenced.flagged_spans:

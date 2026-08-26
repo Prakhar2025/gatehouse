@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     gray_band_low: float = Field(default=0.40, ge=0, le=1)
     gray_band_high: float = Field(default=0.75, ge=0, le=1)
     silent_kill_floor: float = Field(default=0.95, ge=0, le=1)
+    # Rule-engine score at or above which a signal reaches SCREEN band when no
+    # model likelihood is available (LOCAL_MOCK, RULE_ONLY degradation). This
+    # is THE calibration knob P6 sweeps on the dev split; it lives in settings,
+    # not hardcoded, so one environment variable moves the operating point.
+    rule_screen_floor: float = Field(default=0.40, ge=0, le=1)
 
     # --- dedupe ---
     dedupe_ttl_hours: int = Field(default=72, ge=1)
