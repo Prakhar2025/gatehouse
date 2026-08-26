@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 03-architecture |
-| Last updated | 2026-08-24 |
+| Last updated | 2026-08-26 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.3.0 | Added section 3.1: rollback rehearsal record with evidence table from the 2026-08-26 staging drill |
 | 0.2.0 | CI/CD pipeline converted to Mermaid flow diagram |
 | 0.1.0 | Initial draft |
 
@@ -67,6 +68,25 @@ flowchart TB
 Rollback strategy: SAM stack version aliases + AgentCore runtime keeps prior
 container revision; console promotes via Vercel instant rollback. Pack rollback =
 manifest pointer flip (packs are immutable artifacts).
+
+### 3.1 Rollback Rehearsal Record (staging, executed 2026-08-26)
+
+The launch checklist item "rollback rehearsed once in staging for each
+deployable component" is satisfied for the intake Lambda as follows:
+
+| Step | Action | Evidence |
+|---|---|---|
+| 1 | Pre-P4 build (`71b4301`) rebuilt in an isolated git worktree, packaged separately | source zip 80333 bytes vs 83477 current |
+| 2 | Rolled BACK: worktree artifacts deployed to the live staging stack | UPDATE_COMPLETE, IntakeFunction LastModified 11:37 UTC |
+| 3 | Old code proven serving | 2/2 live Telegram sends PASS (p95 2.59s); ZERO case_trace lines in CloudWatch, the expected pre-trace behavior and a clean discriminator |
+| 4 | Rolled FORWARD to current main build | UPDATE_COMPLETE |
+| 5 | Recovery proven | 2/2 sends PASS (p95 2.35s); case_trace lines resumed with full reconstruction fields (verdict SCAM, spend $0.004, four stage timings) |
+
+Procedure notes for future drills: rebuild the target commit in a worktree so
+the artifact is byte-honest; pass secrets through the deploy script's env file
+convention rather than copying values into command lines; use an observable
+behavior delta (here, trace emission) between versions as proof of which build
+is actually serving, never trust the deploy banner alone.
 
 ## 4. Observability
 

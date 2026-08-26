@@ -492,7 +492,10 @@ def _escalate(
         return None
     if panic:
         urgency = "EMERGENCY"
-    summary = "; ".join(result.reason_codes[:3]) or "see evidence bundle"
+    # Reason codes are model-authored strings; the canary must never ride a
+    # guardian card either (same tripwire law as member replies).
+    summary_codes = [c for c in result.reason_codes[:3] if not contains_canary(c, result.canary)]
+    summary = "; ".join(summary_codes) or "see evidence bundle"
     title = f"{result.verdict} on a {channel} forward"
     card = EscalationCard(
         household_id=household_id,

@@ -318,6 +318,50 @@ class TestCanaryTripDrill:
         assert result.canary not in guarded
         assert "verified" not in guarded
 
+    def test_guardian_card_summary_never_carries_canary(self) -> None:
+        from gatehouse.channels.notify import LoggingNotifier, NotificationService
+        from gatehouse.config import Settings
+        from gatehouse.runtime import _escalate
+
+        # Build a real result whose reason codes contain the canary.
+        result = _investigate(
+            "Your KYC has expired, pay now to scammer99@ybl today urgent",
+            model=MockModel(tool_payload={"scam_likelihood": 0.97, "reason_code": "KYC"}),
+        )
+        result.reason_codes = [f"injected {result.canary}", "PAYMENT_INTENT"]
+        sent: list[str] = []
+
+        class _CaptureNotifier(LoggingNotifier):
+            def send(self, chat_id: str, text: str) -> bool:
+                sent.append(text)
+                return True
+
+        svc = NotificationService(_CaptureNotifier())
+        s = Settings(environment="local", guardian_telegram_chat_id="123")
+
+        class _RT:
+            settings = s
+            notification_service_called = False
+
+            def notification_service(self) -> NotificationService:
+                self.notification_service_called = True
+                return svc
+
+        rt = _RT()
+        escalate = _escalate  # imported above; drive it directly
+        outcome = escalate(
+            rt,  # type: ignore[arg-type]
+            result,
+            household_id="hh",
+            channel="telegram",
+            case_id=result.case_id,
+            panic=False,
+            now=NOON_IST_EPOCH,
+        )
+        assert outcome == "sent"
+        assert sent and all(result.canary not in text for text in sent)
+        assert "PAYMENT_INTENT" in sent[0]  # clean codes still delivered
+
 
 class TestTracesReconstructCase:
     """P4 exit evidence: one trace rebuilds the whole case."""
