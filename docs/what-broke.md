@@ -149,6 +149,27 @@ Fix: finding_empty() is the explicit no-correlation outcome with unavailable Fal
 Prevention: degradation vocabulary names the dependency that FAILED, never the data that was absent; whenever a finding type has success and failure shapes, row tests assert both sides.
 Phase: evaluation layer
 
+## [2026-08-27] the model leg flagged a third of all benign traffic as threats
+Symptom: the first real-model dev run showed a 30.56 percent false-gate rate against a 5 percent bar; all 44 false gates were benign (OTP forwards, bank offers, delivery updates, newsletters) while the rules-only runner had zero on the same split.
+Root cause: the policy map lets the model likelihood drive any signal into SCREEN or DECISION regardless of whether the message offers an action handle, and no downstream evidence could counter model opinion on linkless traffic. Two design gaps compounded: the issuer-verified rescue only covered the SCREEN band (a model panic at 0.85+ escaped it), and the payment-word guard then kept genuine COD notes escalated.
+Fix: verdict policy gained two model-panic caps, both gated on provenance: triage now reports band_source (model versus rules) and rule_class, and the guardian caps only model-driven bands over weak rule evidence when the message carries no action channel (no link, no phone, no VPA, no payment ask); verified-claim evidence caps a DECISION panic when no collectable handle exists. Deterministic rule evidence is never capped.
+Prevention: staging-mode evaluation with the real model is now a first-class runner (capped, seeded, miss-exporting); the mock runner alone can never again certify false-gate behavior because the failure lives only in the model leg.
+Phase: evaluation layer
+
+## [2026-08-27] spend meter priced APAC profile calls at 15x through the fallback rate
+Symptom: live case traces reported about 0.0040 USD per investigation while the staged runner measured 0.00026 USD for the same model.
+Root cause: the rate table keys on bare model ids; the deployed config uses the ap-south-1 APAC inference profile prefix, so every lookup missed and fell to the conservative most-expensive fallback.
+Fix: rate lookup resolves regional profile prefixes (apac., eu., us.) to the underlying model entry; unknown ids still fail expensive, never cheap.
+Prevention: any new regional profile or model id must land in the rate table the same commit it enters config; the meter exists to bound spend decisions, and a systematic 15x overstatement distorts those decisions even in the safe direction.
+Phase: evaluation layer
+
+## [2026-08-27] staging runner crashed printing its own summary after the run completed
+Symptom: the first live 8-case smoke run finished, paid for its calls, then raised KeyError on model_id while formatting the console summary; no artifact was written.
+Root cause: the payload embedded model_mode but the summary printer referenced model_id, and the offline tests asserted payload keys the printer never touched.
+Fix: model_id embedded in the staging payload and the contract test now asserts every key the printer reads.
+Prevention: printer-vs-payload drift is a contract: tests must assert the union of produced and consumed keys for every reporting surface, not just produced.
+Phase: evaluation layer
+
 ## [2026-08-26] weekly soak report crashed on an empty window instead of reporting it
 Symptom: build_weekly_report over zero records raised a pydantic ValidationError because quiet_week arrived as [] instead of a bool; the windowing test caught it before any live week existed.
 Root cause: python and chains return the falsy operand object itself, so [] and escalations == 0 evaluated to [], which the strict bool field rejected. The broader class is truthy-looking expressions feeding typed boundaries.
