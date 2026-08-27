@@ -11,7 +11,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SignalClass = Literal["NOISE", "INFO", "SCREEN", "DECISION", "EMERGENCY"]
+from gatehouse.constants import SignalClass as SignalClass  # explicit re-export
+
 Verdict = Literal["SAFE", "SUSPICIOUS", "SCAM", "NEEDS_HUMAN"]
 CheckType = Literal[
     "lexicon_rule",
@@ -35,6 +36,12 @@ class TriageResult(BaseModel):
     payment_intent: bool = False
     urgency_signals: list[str] = Field(default_factory=list)
     reason_code: str
+    # Which leg drove the final band, and what the deterministic rule leg
+    # independently concluded. The guardian needs both to cap MODEL panics
+    # on channel-free traffic without ever capping rule evidence (doc 04:
+    # models propose, code decides).
+    band_source: Literal["model", "rules"] = "rules"
+    rule_class: SignalClass = "NOISE"
 
 
 class Claim(BaseModel):

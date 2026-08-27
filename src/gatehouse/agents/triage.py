@@ -13,7 +13,7 @@ models propose scores, code decides classes (charter principle 1).
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -155,14 +155,19 @@ async def run_triage(
     # the rule score is banded against the calibrated SCREEN floor; with one,
     # the original floor map applies (the model leg owns its own bands).
     effective_likelihood = scam_likelihood if scam_likelihood is not None else 0.0
+    band_source: Literal["model", "rules"] = "rules" if scam_likelihood is None else "model"
     if scam_likelihood is None:
         base_class = _band_for_rule_score(rule.score, screen_floor)
     else:
         base_class = _policy_map(effective_likelihood, rule.rule_class)
     if base_class in (CLASS_NOISE, CLASS_INFO) and (rule.has_url and rule.score > 0):
+        # A deterministic rule feature forces this promotion: record it as
+        # rule evidence, not model opinion.
         base_class = CLASS_SCREEN
+        band_source = "rules"
     if base_class == CLASS_DECISION and payment_intent and urgency and fenced.flagged_spans:
         base_class = CLASS_EMERGENCY
+        band_source = "rules"
 
     reason_code = llm_reason or (f"RULE_{rule.rule_class}" if rule.matches else "RULE_NO_MATCH")
     confidence = round(max(effective_likelihood, rule.score), 4)
@@ -173,4 +178,6 @@ async def run_triage(
         payment_intent=payment_intent,
         urgency_signals=urgency,
         reason_code=reason_code,
+        band_source=band_source,
+        rule_class=rule.rule_class,
     )

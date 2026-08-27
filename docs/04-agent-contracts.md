@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 03-architecture |
-| Last updated | 2026-08-24 |
+| Last updated | 2026-08-27 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.3.0 | TriageResult contract gains band_source and rule_class so downstream policy can cap model-driven bands without ever capping deterministic rule evidence; eval impact: LOCAL_MOCK artifacts byte-identical, staged pre/post pair published under docs/eval-results/ |
 | 0.2.0 | Replaced ASCII orchestration sketch with Mermaid supervisor topology diagram |
 | 0.1.0 | Initial draft |
 
@@ -79,7 +80,8 @@ SignalHeader:
 
 TriageResult:
   signal_class, confidence, intent_tags[], payment_intent: bool,
-  urgency_signals[], language, reason_code
+  urgency_signals[], language, reason_code,
+  band_source (model|rules), rule_class
 
 VerificationFinding:
   claim_id, claim_text, check_type (issuer_rule|domain_intel|rail_format|

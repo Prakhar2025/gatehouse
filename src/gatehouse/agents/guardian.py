@@ -56,6 +56,12 @@ def compose_package(
     # inside an official issuer domain and the issuer claim itself PASSes,
     # a SCREEN band driven only by link presence is a false positive by
     # definition. Genuine bank traffic must not park in the review queue.
+    # A DECISION band receives the same rescue under stricter guards: the
+    # model leg can panic on branded delivery and government traffic
+    # (observed live: a genuine BlueDart tracking message scored >= 0.85),
+    # and a claim-rule PASS is exactly the evidence that caps that panic.
+    # The payment-intent guard keeps the credibility-link attack shape
+    # escalated: a real brand link plus a pay-now ask is still a decision.
     domain_findings = [f for f in findings if f.check_type == "domain_intel"]
     issuer_verified = any(f.check_type == "issuer_rule" and f.result == "PASS" for f in findings)
     # Trusted rescue requires the message to CLAIM a trusted party. A link
@@ -68,11 +74,58 @@ def compose_package(
         and (issuer_verified or claims_issuer)
     )
 
-    if links_all_verified and triage.signal_class == "SCREEN" and not hard_fails:
+    verified_kill_switch = (
+        links_all_verified
+        and not hard_fails
+        and (
+            triage.signal_class == "SCREEN"
+            or (
+                triage.signal_class == "DECISION"
+                and issuer_verified
+                and (
+                    not triage.payment_intent
+                    # A payment ASK with no payment HANDLE is benign: genuine
+                    # COD notes say pay, but carry no VPA, phone, or UTR the
+                    # money could actually leave through. The credibility-link
+                    # attack always carries an extractable handle.
+                    or not graph.identifiers
+                )
+            )
+        )
+    )
+
+    # Channel-free cap: a message that offers no action handle (no link to
+    # adjudicate, no phone, no VPA, no UTR, no payment ask) cannot move
+    # anyone's money in a forwarding context; the gate guards actions, and
+    # there is none to guard. Model-leg panic on OTP forwards and linkless
+    # brand offers lands here (staging eval 2026-08-27: 30.6 percent false
+    # gates, every miss channel-free). Two hard limits keep this a cap on
+    # model opinion and nothing else:
+    # - the band must be MODEL-driven; deterministic rule evidence never gets
+    #   capped, or text-only scam scripts would lose their escalation,
+    # - the rule leg's own conclusion must be weak (NOISE or INFO): when the
+    #   rules independently call it SCREEN or worse, two detectors agreeing
+    #   outranks one channel-absence heuristic.
+    # Emergency bands and hard evidence always escalate regardless.
+    model_panic_band = triage.band_source == "model" and triage.rule_class in ("NOISE", "INFO")
+    channel_free = not domain_findings and not graph.identifiers and not triage.payment_intent
+    channel_free_cap = (
+        channel_free
+        and not hard_fails
+        and triage.signal_class in ("SCREEN", "DECISION")
+        and model_panic_band
+    )
+
+    if verified_kill_switch:
         verdict = "SAFE"
         confidence = _round(max(0.75, 1.0 - triage.confidence))
         reason_codes.append("ISSUER_VERIFIED")
         evidence.append("all links resolve inside the claimed issuer's official domain")
+    elif channel_free_cap:
+        verdict = "SAFE"
+        confidence = _round(max(0.60, 1.0 - triage.confidence))
+        reason_codes.append("NO_ACTION_CHANNEL")
+        evidence.append("no link, phone, VPA, or payment ask present: nothing to act on")
     elif hard_fails:
         verdict = "SCAM"
         weights = [f.weight for f in hard_fails]

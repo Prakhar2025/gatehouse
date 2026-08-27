@@ -24,7 +24,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from gatehouse.constants import MAX_DISTINCT_COUNTED, RULE_CORROBORATION_STEP
+from gatehouse.constants import (
+    MAX_DISTINCT_COUNTED,
+    RULE_CORROBORATION_STEP,
+    SignalClass,
+)
 from gatehouse.packs.schemas import CountryPack
 
 
@@ -48,7 +52,7 @@ class RuleResult:
     payment_intent: bool = False
 
     @property
-    def rule_class(self) -> str:
+    def rule_class(self) -> SignalClass:
         """Coarse class from score bands (doc 04 escalation ladder)."""
         if self.score >= 0.70:
             return "DECISION"

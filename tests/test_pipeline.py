@@ -10,7 +10,12 @@ import pytest
 
 from gatehouse.agents.guardian import compose_package
 from gatehouse.agents.mock_model import MockModel
-from gatehouse.agents.schemas import GraphFinding, TriageResult, VerificationFinding
+from gatehouse.agents.schemas import (
+    GraphFinding,
+    GraphIdentifier,
+    TriageResult,
+    VerificationFinding,
+)
 from gatehouse.agents.verify import verify_signal
 from gatehouse.config import Settings
 from gatehouse.graph.store import InMemoryGraphStore
@@ -66,6 +71,231 @@ class TestGuardian:
         assert pkg.verdict == "SCAM"
         assert "HARD_FAIL_ISSUER_RULE" in pkg.reason_codes
         assert pkg.recommended_action == "warn_member"
+
+    def test_verified_claim_caps_model_panic_decision(self, pack: CountryPack) -> None:
+        """Live-observed shape: the model leg scored a genuine BlueDart
+        tracking message into the DECISION band. When every link resolves
+        inside the claimed party's official domains and the claim rule
+        PASSes, verified evidence must cap that panic: SAFE, disclosed as
+        issuer-verified."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION", confidence=0.86, payment_intent=False, reason_code="R9"
+        )
+        dom = VerificationFinding(
+            subject="www.bluedart.com",
+            check_type="domain_intel",
+            result="PASS",
+            evidence_ref="trusted_domain:bluedart.com",
+            weight=0.85,
+        )
+        claim = VerificationFinding(
+            subject="BlueDart",
+            check_type="issuer_rule",
+            result="PASS",
+            evidence_ref="claims BlueDart and links resolve inside bluedart.com",
+            weight=0.9,
+        )
+        pkg = compose_package(triage, [dom, claim], GraphFinding(), s)
+        assert pkg.verdict == "SAFE"
+        assert "ISSUER_VERIFIED" in pkg.reason_codes
+
+    def test_credibility_attack_with_handle_still_escalates(self, pack: CountryPack) -> None:
+        """Credibility-link attack shape refined against the COD reality:
+        a real brand link plus a payment ASK plus an extractable money
+        HANDLE (VPA/phone/UTR) escalates even though every link verifies.
+        The handle is what makes collection possible."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.9,
+            payment_intent=True,
+            reason_code="R10",
+            band_source="model",
+        )
+        dom = VerificationFinding(
+            subject="www.bluedart.com",
+            check_type="domain_intel",
+            result="PASS",
+            evidence_ref="trusted_domain:bluedart.com",
+            weight=0.85,
+        )
+        claim = VerificationFinding(
+            subject="BlueDart",
+            check_type="issuer_rule",
+            result="PASS",
+            evidence_ref="claims BlueDart and links resolve inside bluedart.com",
+            weight=0.9,
+        )
+        pkg = compose_package(
+            triage,
+            [dom, claim],
+            GraphFinding(
+                identifiers=[GraphIdentifier(kind="VPA", hashed_value="h4sh1value9876543")],
+                prior_events=0,
+            ),
+            s,
+        )
+        assert pkg.verdict == "SUSPICIOUS"
+        assert "PAYMENT_INTENT" in pkg.reason_codes
+
+    def test_verified_cod_note_without_handle_is_safe(self, pack: CountryPack) -> None:
+        """Genuine cash-on-delivery notes say pay while carrying only the
+        brand's own link and no collectable handle: with zero extracted
+        identifiers there is nothing to act on, so the model's DECISION
+        panic gets capped despite the payment word."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.9,
+            payment_intent=True,
+            reason_code="R10b",
+            band_source="model",
+        )
+        dom = VerificationFinding(
+            subject="www.bluedart.com",
+            check_type="domain_intel",
+            result="PASS",
+            evidence_ref="trusted_domain:bluedart.com",
+            weight=0.85,
+        )
+        claim = VerificationFinding(
+            subject="BlueDart",
+            check_type="issuer_rule",
+            result="PASS",
+            evidence_ref="claims BlueDart and links resolve inside bluedart.com",
+            weight=0.9,
+        )
+        pkg = compose_package(triage, [dom, claim], GraphFinding(), s)
+        assert pkg.verdict == "SAFE"
+        assert "ISSUER_VERIFIED" in pkg.reason_codes
+
+    def test_unadjudicated_claim_never_caps_decision(self, pack: CountryPack) -> None:
+        """A DECISION with links passing the domain tier but no PASS on the
+        claim rule itself is not verified evidence; it stays escalated."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION", confidence=0.88, payment_intent=False, reason_code="R11"
+        )
+        dom = VerificationFinding(
+            subject="www.bluedart.com",
+            check_type="domain_intel",
+            result="PASS",
+            evidence_ref="trusted_domain:bluedart.com",
+            weight=0.85,
+        )
+        pkg = compose_package(triage, [dom], GraphFinding(), s)
+        assert pkg.verdict == "SUSPICIOUS"
+
+    def test_channel_free_model_panic_capped_to_safe(self, pack: CountryPack) -> None:
+        """Staging-observed shape: the model leg scored a member's own OTP
+        forward into DECISION. No link, no phone, no VPA, no payment ask:
+        nothing can act on this message, so it must not interrupt anyone."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.92,
+            payment_intent=False,
+            reason_code="R12",
+            band_source="model",
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert pkg.verdict == "SAFE"
+        assert "NO_ACTION_CHANNEL" in pkg.reason_codes
+
+    def test_rule_driven_band_is_never_capped(self, pack: CountryPack) -> None:
+        """Same channel-free shape, but the deterministic rule leg itself
+        demanded the band: deterministic evidence never gets capped, or
+        text-only scam scripts would lose their escalation."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.92,
+            payment_intent=False,
+            reason_code="RULE_DECISION",
+            band_source="rules",
+            rule_class="DECISION",
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert pkg.verdict == "SUSPICIOUS"
+
+    def test_channel_free_screens_do_not_escalate(self, pack: CountryPack) -> None:
+        """Linkless bank offers and newsletters in the SCREEN band with no
+        action handle stay silent (staging miss family, 21 of 44)."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="SCREEN",
+            confidence=0.6,
+            payment_intent=False,
+            reason_code="R13",
+            band_source="model",
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert pkg.verdict == "SAFE"
+
+    def test_payment_ask_always_keeps_a_channel(self, pack: CountryPack) -> None:
+        """payment_intent alone is an action handle: a money ask escalates
+        even with no identifiers extracted yet and no verifying evidence."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.9,
+            payment_intent=True,
+            reason_code="R14",
+            band_source="model",
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert pkg.verdict == "SUSPICIOUS"
+        assert "PAYMENT_INTENT" in pkg.reason_codes
+
+    def test_unverified_link_keeps_the_gate(self, pack: CountryPack) -> None:
+        """A link that is not in any registry is an action channel of
+        unknown reputation: INCONCLUSIVE must stay escalated."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="SCREEN", confidence=0.6, payment_intent=False, reason_code="R15"
+        )
+        dom = VerificationFinding(
+            subject="strange-shop.example",
+            check_type="domain_intel",
+            result="INCONCLUSIVE",
+            evidence_ref="not_in_issuer_registry",
+            weight=0.2,
+        )
+        pkg = compose_package(triage, [dom], GraphFinding(), s)
+        assert pkg.verdict == "SUSPICIOUS"
+
+    def test_extracted_identifier_keeps_the_gate(self, pack: CountryPack) -> None:
+        """A phone or VPA in the text is an action channel: impersonation
+        scripts hand the victim a number to send money to."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="DECISION",
+            confidence=0.7,
+            payment_intent=False,
+            reason_code="R16",
+            band_source="model",
+        )
+        pkg = compose_package(
+            triage,
+            [],
+            GraphFinding(
+                identifiers=[GraphIdentifier(kind="VPA", hashed_value="a1b2c3d4e5f6a7b8")],
+                prior_events=0,
+            ),
+            s,
+        )
+        assert pkg.verdict == "SUSPICIOUS"
+
+    def test_emergency_band_never_capped(self, pack: CountryPack) -> None:
+        """The channel-free cap covers SCREEN and DECISION only; an EMERGENCY
+        triage always reaches a human."""
+        s = Settings()
+        triage = TriageResult(
+            signal_class="EMERGENCY", confidence=0.9, payment_intent=False, reason_code="R17"
+        )
+        pkg = compose_package(triage, [], GraphFinding(), s)
+        assert pkg.verdict == "SUSPICIOUS"
 
     def test_suspicious_band_without_fails(self, pack: CountryPack) -> None:
         s = Settings()
