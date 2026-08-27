@@ -1,0 +1,789 @@
+{
+  "breaker_refusals": 0,
+  "cases": 480,
+  "degraded_case_share": 0.0187,
+  "est_spend_mean_usd": 0.062521,
+  "est_spend_p95_usd": 0.1192,
+  "failure_taxonomy": {
+    "degraded_mode_cause": 0,
+    "labeling_dispute": 0,
+    "language_gap": 0,
+    "missed_pattern_family": 0,
+    "orchestration_bug": 0,
+    "threshold_miscalibration": 44,
+    "verification_tool_gap": 0
+  },
+  "false_gate_rate": 0.3056,
+  "fn": 0,
+  "fp": 44,
+  "max_calls_cap": 600,
+  "max_usd_cap": 2.0,
+  "misses": [
+    {
+      "case_id": "dev-otp_forward-000",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-001",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-002",
+      "confidence": 0.95,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-003",
+      "confidence": 0.95,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-004",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-005",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-006",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-007",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-008",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-009",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-010",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-011",
+      "confidence": 1.0,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-012",
+      "confidence": 0.95,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-013",
+      "confidence": 0.85,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-014",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-otp_forward-015",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "otp_forward",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-001",
+      "confidence": 0.85,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-003",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-005",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-006",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-007",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-009",
+      "confidence": 0.7,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-011",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-013",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-014",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-015",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-017",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-019",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-021",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-022",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-legit_bank_offer-023",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "legit_bank_offer",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-001",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-003",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-005",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-007",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-009",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-011",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-013",
+      "confidence": 0.85,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-015",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-017",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-delivery_update-019",
+      "confidence": 0.9,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_DECISION"
+      ],
+      "stratum": "delivery_update",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "DECISION",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-newsletter_promo-005",
+      "confidence": 0.8,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "newsletter_promo",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-newsletter_promo-013",
+      "confidence": 0.7,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "newsletter_promo",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    },
+    {
+      "case_id": "dev-newsletter_promo-019",
+      "confidence": 0.7,
+      "degraded_flags": [],
+      "flagged_would_interrupt": true,
+      "ground_truth": "benign",
+      "reason_codes": [
+        "TRIAGE_SCREEN"
+      ],
+      "stratum": "newsletter_promo",
+      "taxonomy_class": "threshold_miscalibration",
+      "triage_class": "SCREEN",
+      "verdict": "SUSPICIOUS"
+    }
+  ],
+  "model_calls": 471,
+  "model_id": "apac.amazon.nova-micro-v1:0",
+  "model_mode": "apac.amazon.nova-micro-v1:0",
+  "noise_leak_note": "notification path not exercised by this runner; rate not measurable here",
+  "noise_leak_rate": 0.0,
+  "pack_sha256": "b9b8cfe08ca61d73764dccd12cff8c4e37563eb06583ee738b6616e6cf65af9e",
+  "pack_version": "0.2.0",
+  "per_stratum": [
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 72,
+      "stratum": "kyc_scam",
+      "tn": 0,
+      "tp": 72
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 48,
+      "stratum": "digital_arrest",
+      "tn": 0,
+      "tp": 48
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 56,
+      "stratum": "investment",
+      "tn": 0,
+      "tp": 56
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "lottery",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 48,
+      "stratum": "upi_collect_fraud",
+      "tn": 0,
+      "tp": 48
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "courier_scam",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 32,
+      "stratum": "job_task_scam",
+      "tn": 0,
+      "tp": 32
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 16,
+      "stratum": "relative_impersonation",
+      "tn": 0,
+      "tp": 16
+    },
+    {
+      "fn": 0,
+      "fp": 15,
+      "n": 24,
+      "stratum": "legit_bank_offer",
+      "tn": 9,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 10,
+      "n": 20,
+      "stratum": "delivery_update",
+      "tn": 10,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 20,
+      "stratum": "govt_notice_legit",
+      "tn": 20,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 28,
+      "stratum": "family_chatter",
+      "tn": 28,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 3,
+      "n": 28,
+      "stratum": "newsletter_promo",
+      "tn": 25,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 16,
+      "n": 16,
+      "stratum": "otp_forward",
+      "tn": 0,
+      "tp": 0
+    },
+    {
+      "fn": 0,
+      "fp": 0,
+      "n": 8,
+      "stratum": "govt_legit_trap",
+      "tn": 8,
+      "tp": 0
+    }
+  ],
+  "precision": 0.8842,
+  "precision_ci": [
+    0.8481,
+    0.9126
+  ],
+  "ran_cases": 480,
+  "recall": 1.0,
+  "recall_ci": [
+    0.9887,
+    1.0
+  ],
+  "requested_cases": 480,
+  "runner": "full-pipeline-staging-v1",
+  "runner_wall_ms_p50": 527.58,
+  "runner_wall_ms_p95": 720.97,
+  "screen_floor": 0.4,
+  "seed": 4207,
+  "spend_usd_total": 0.125078,
+  "split": "dev",
+  "tn": 100,
+  "tp": 336
+}

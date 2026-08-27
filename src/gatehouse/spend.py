@@ -50,8 +50,24 @@ class SpendMeter:
 
     @staticmethod
     def estimate_usd(model_id: str, input_tokens: int, output_tokens: int) -> float:
-        rate_in, rate_out = MODEL_RATES_USD_PER_MTOK.get(model_id, _FALLBACK_RATE)
+        rate_in, rate_out = SpendMeter._rates_for(model_id)
         return round((input_tokens * rate_in + output_tokens * rate_out) / 1_000_000, 6)
+
+    @staticmethod
+    def _rates_for(model_id: str) -> tuple[float, float]:
+        """Exact match first; regional inference-profile prefixes (apac., eu.,
+        us.) resolve to the same underlying model's price. An unknown id still
+        gets the most expensive known rate rather than zero (fail conservative).
+        """
+        rates = MODEL_RATES_USD_PER_MTOK.get(model_id)
+        if rates is not None:
+            return rates
+        _, _, rest = model_id.partition(".")
+        if rest:
+            stripped = MODEL_RATES_USD_PER_MTOK.get(rest)
+            if stripped is not None:
+                return stripped
+        return _FALLBACK_RATE
 
     def record(
         self, agent: str, model_id: str, input_tokens: int, output_tokens: int
