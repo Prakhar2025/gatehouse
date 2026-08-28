@@ -1,0 +1,129 @@
+import type { Verdict } from "@/lib/api/schemas";
+
+export type Locale = "en" | "hi";
+
+const en = {
+  app_name: "Gatehouse",
+  app_tagline: "Nothing harmful gets past the gate",
+  nav_dashboard: "Dashboard",
+  nav_queue: "Queue",
+  nav_circle: "Circle",
+  nav_settings: "Settings",
+  nav_audit: "Audit",
+  gate_all_clear: "All clear",
+  gate_all_clear_body: "{screened} screened this week. {silent} handled silently. Nothing needs you.",
+  gate_needs_you: "Needs you",
+  gate_needs_you_body: "{open} escalations are waiting for a decision.",
+  gate_degraded: "Degraded mode active",
+  gate_degraded_body: "The system is running with reduced capability and is telling you about it.",
+  metric_screened: "Screened (7d)",
+  metric_open: "Open escalations",
+  metric_latency: "Latency p50 / p95",
+  metric_spend: "Spend mean / case",
+  metric_precision: "Precision (SCAM)",
+  metric_false_gate: "False-gate rate",
+  queue_title: "Decision queue",
+  queue_ranked: "Ranked by urgency, then age. j / k move, Enter opens, a approves, w warns.",
+  queue_empty_title: "A quiet week is the product working",
+  queue_empty_body: "Nothing needs a human decision right now. The digest has the full story.",
+  case_signal: "Signal",
+  case_verdict: "Verdict",
+  case_findings: "Verification findings",
+  case_graph: "Graph",
+  case_timeline: "Timeline",
+  case_engagement: "Engagement",
+  case_cost: "Cost",
+  case_bundle: "Evidence bundle",
+  case_action_approve: "Approve recommended",
+  case_action_warn: "Warn member",
+  case_copy_id: "Copy case id",
+  common_loading: "Loading",
+  common_error_title: "Could not reach the gate",
+  common_error_body: "Cached data may be stale. Retry when the connection returns.",
+  common_retry: "Retry",
+  circle_title: "Family circle",
+  circle_invite: "Invite a member",
+  settings_title: "Settings",
+  settings_quiet: "Quiet hours",
+  settings_language: "Language",
+  settings_engagement: "Engage suspected scammers",
+  settings_export: "Export household data",
+  audit_title: "Audit log",
+  audit_chain: "Hash-chained, append-only",
+  verdict_SAFE: "SAFE",
+  verdict_SUSPICIOUS: "Suspicious",
+  verdict_SCAM: "Scam",
+  verdict_NEEDS_HUMAN: "Needs human",
+} as const;
+
+export type CopyKey = keyof typeof en;
+
+const hi: Partial<Record<CopyKey, string>> = {
+  app_name: "गेटहाउस",
+  app_tagline: "कोई हानिकारक चीज़ द्वार से नहीं गुज़रती",
+  nav_dashboard: "डैशबोर्ड",
+  nav_queue: "क़तार",
+  nav_circle: "परिवार",
+  nav_settings: "सेटिंग्स",
+  nav_audit: "ऑडिट",
+  gate_all_clear: "सब शांत",
+  gate_all_clear_body: "इस हफ़्ते {screened} संदेश जाँचे गए। {silent} चुपचाप संभाले गए। आपको कुछ नहीं करना।",
+  gate_needs_you: "आपकी ज़रूरत है",
+  gate_needs_you_body: "{open} निर्णय आपकी प्रतीक्षा में हैं।",
+  gate_degraded: "सीमित मोड चालू",
+  gate_degraded_body: "सिस्टम कम क्षमता में चल रहा है और आपको बता रहा है।",
+  metric_screened: "जाँचे गए (7 दिन)",
+  metric_open: "खुले निर्णय",
+  metric_latency: "विलंब p50 / p95",
+  metric_spend: "खर्च प्रति मामला",
+  metric_precision: "सटीकता (SCAM)",
+  metric_false_gate: "झूठी चेतावनी दर",
+  queue_title: "निर्णय क़तार",
+  queue_ranked: "तात्कालिकता के अनुसार क्रम। j / k चलें, Enter खोलें, a स्वीकृत, w चेतावनी।",
+  queue_empty_title: "शांत हफ़्ता ही उत्पाद की सफलता है",
+  queue_empty_body: "अभी किसी इंसानी निर्णय की ज़रूरत नहीं। पूरी कहानी डाइजेस्ट में है।",
+  case_signal: "संदेश",
+  case_verdict: "निर्णय",
+  case_findings: "सत्यापन निष्कर्ष",
+  case_graph: "ग्राफ़",
+  case_timeline: "समयरेखा",
+  case_engagement: "संवाद",
+  case_cost: "खर्च",
+  case_bundle: "साक्ष्य पैकेट",
+  case_action_approve: "अनुशंसित स्वीकारें",
+  case_action_warn: "सदस्य को चेतावनी",
+  case_copy_id: "केस आईडी कॉपी करें",
+  common_loading: "लोड हो रहा है",
+  common_error_title: "द्वार तक नहीं पहुँच पाए",
+  common_error_body: "कैश किया डेटा पुराना हो सकता है। कनेक्शन लौटने पर दोबारा कोशिश करें।",
+  common_retry: "फिर कोशिश करें",
+  circle_title: "परिवार",
+  circle_invite: "सदस्य जोड़ें",
+  settings_title: "सेटिंग्स",
+  settings_quiet: "शांत घंटे",
+  settings_language: "भाषा",
+  settings_engagement: "संदिग्ध धोखेबाज़ों से संवाद",
+  settings_export: "परिवार का डेटा निर्यात",
+  audit_title: "ऑडिट लॉग",
+  audit_chain: "हैश-श्रृंखला, केवल जोड़ने योग्य",
+  verdict_SAFE: "सुरक्षित",
+  verdict_SUSPICIOUS: "संदिग्ध",
+  verdict_SCAM: "धोखाधड़ी",
+  verdict_NEEDS_HUMAN: "इंसानी समीक्षा",
+};
+
+export const locales: Record<Locale, Partial<Record<CopyKey, string>> & Record<string, unknown>> = {
+  en,
+  hi,
+};
+
+export function copyFor(locale: Locale, key: CopyKey, vars?: Record<string, string | number>): string {
+  const raw = locales[locale][key] ?? en[key];
+  const out = typeof raw === "string" ? raw : en[key];
+  if (!vars) return out;
+  return Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), out);
+}
+
+export const verdictCopyKey = (v: Verdict): CopyKey => `verdict_${v}` as CopyKey;
+
+export { useLocale } from "./use-locale";

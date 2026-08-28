@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/*
+  Gatehouse console tokens. One calm theme, light and dark, Linear/Stripe
+  density. Verdict colors are the only saturated hues on any screen because
+  they carry the product's meaning; everything else stays zinc and quiet.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #f7f7f8;
+  --card: #ffffff;
+  --card-muted: #fbfbfc;
+  --border-subtle: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --foreground: #18181b;
+  --foreground-muted: #71717a;
+  --foreground-subtle: #a1a1aa;
+  --accent: #18181b;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --safe-fg: #166534;
+  --safe-bg: #f0fdf4;
+  --safe-border: #bbf7d0;
+  --suspicious-fg: #92400e;
+  --suspicious-bg: #fffbeb;
+  --suspicious-border: #fde68a;
+  --scam-fg: #991b1b;
+  --scam-bg: #fef2f2;
+  --scam-border: #fecaca;
+  --needs-human-fg: #1e40af;
+  --needs-human-bg: #eff6ff;
+  --needs-human-border: #bfdbfe;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #09090b;
+    --card: #111113;
+    --card-muted: #16161a;
+    --border-subtle: #27272a;
+    --border-strong: #3f3f46;
+    --foreground: #fafafa;
+    --foreground-muted: #a1a1aa;
+    --foreground-subtle: #71717a;
+    --accent: #fafafa;
+
+    --safe-fg: #4ade80;
+    --safe-bg: #052e16;
+    --safe-border: #14532d;
+    --suspicious-fg: #fbbf24;
+    --suspicious-bg: #451a03;
+    --suspicious-border: #78350f;
+    --scam-fg: #f87171;
+    --scam-bg: #450a0a;
+    --scam-border: #7f1d1d;
+    --needs-human-fg: #60a5fa;
+    --needs-human-bg: #172554;
+    --needs-human-border: #1e3a8a;
   }
+}
+
+@theme inline {
+  --color-bg: var(--background);
+  --color-card: var(--card);
+  --color-card-muted: var(--card-muted);
+  --color-line: var(--border-subtle);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--foreground);
+  --color-fg-muted: var(--foreground-muted);
+  --color-fg-subtle: var(--foreground-subtle);
+  --color-accent: var(--accent);
+
+  --color-safe-fg: var(--safe-fg);
+  --color-safe-bg: var(--safe-bg);
+  --color-safe-line: var(--safe-border);
+  --color-wary-fg: var(--suspicious-fg);
+  --color-wary-bg: var(--suspicious-bg);
+  --color-wary-line: var(--suspicious-border);
+  --color-scam-fg: var(--scam-fg);
+  --color-scam-bg: var(--scam-bg);
+  --color-scam-line: var(--scam-border);
+  --color-human-fg: var(--needs-human-fg);
+  --color-human-bg: var(--needs-human-bg);
+  --color-human-line: var(--needs-human-border);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+::selection {
+  background: var(--border-strong);
+}
+
+:focus-visible {
+  outline: 2px solid var(--foreground-muted);
+  outline-offset: 2px;
+  border-radius: 2px;
 }

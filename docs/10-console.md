@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 02-product-spec, 03-architecture |
-| Last updated | 2026-08-24 |
+| Last updated | 2026-08-27 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.2.0 | Core console implemented per section 3 on the locked stack (Next.js 16, React 19, Tailwind 4, Radix, Motion, TanStack, Geist): dashboard with gate hero and published confidence intervals, keyboard-first decision queue, case detail with the full evidence bundle viewer (findings, graph, timeline, engagement, cost), circle, settings, audit; en/hi copy with a CI-ready parity script; typed mock transport mirrors doc 14 so the gateway swap touches no screens. Deferred with reasons: auth and onboarding (gateway integration), standalone graph explorer (bundle-level graph panel ships now), Lighthouse CI budgets (no JS CI yet) |
 | 0.1.0 | Initial draft |
 
 ## 1. Role and Principles
