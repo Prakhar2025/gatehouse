@@ -45,6 +45,9 @@ export default function LandingPage() {
             How we handle your data
           </Link>
         </div>
+        <Link href="/how-it-works" className="mt-8 text-sm text-white/50 underline-offset-4 hover:text-white hover:underline">
+          See the pipeline, the silence law, and every document behind it
+        </Link>
         <div className="mt-16 h-8 font-mono text-sm text-white/50">
           <p>
             today it stopped{" "}

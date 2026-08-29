@@ -24,31 +24,40 @@ export interface LiveCase {
   degraded_flags: string[];
 }
 
-/** Real soak-window cases with their signal text, newest first. */
+/** Real soak-window cases from bundle items, newest first, test traffic excluded. */
 export async function listLiveCases(limit = 50): Promise<LiveCase[]> {
   const scan = await doc.send(
     new ScanCommand({
       TableName: casesTable,
-      FilterExpression: "#ca >= :start AND begins_with(sk, :case)",
+      FilterExpression: "#ca >= :start AND contains(sk, :b)",
       ExpressionAttributeNames: { "#ca": "created_at" },
       ExpressionAttributeValues: {
         ":start": SOAK_START_EPOCH,
-        ":case": "CASE#",
+        ":b": "#BUNDLE#",
       },
     }),
   );
   const items = (scan.Items ?? []) as Array<Record<string, unknown>>;
+  const asArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map(String) : v && typeof v === "object" ? Array.from(Object.values(v as Record<string, string>)).map(String) : [];
   return items
-    .map((i) => ({
-      case_id: String(i.sk ?? "").replace("CASE#", ""),
-      household_id: String(i.pk ?? "").replace("HOUSEHOLD#", ""),
-      verdict: (i.verdict as string) ?? null,
-      confidence: i.confidence != null ? Number(i.confidence) : null,
-      member_name: String(i.member_name ?? i.forwarded_by ?? "member"),
-      received_at: new Date(Number(i.created_at) * 1000).toISOString(),
-      text: String(i.signal_text ?? i.text_preview ?? ""),
-      degraded_flags: (i.degraded_flags as string[]) ?? [],
-    }))
+    .map((i) => {
+      const text = String(i.raw_text_redacted ?? "");
+      const flags = asArray(i.degraded_flags).filter((f) => f !== "NONE");
+      return {
+        case_id: String(i.case_id ?? String(i.sk ?? "").replace("CASE#", "").split("#")[0]),
+        household_id: String(i.pk ?? "").replace("HOUSEHOLD#", ""),
+        verdict: (i.verdict as string) ?? null,
+        confidence: i.verdict_confidence != null ? Number(i.verdict_confidence) : null,
+        member_name: "member",
+        received_at: new Date(Number(i.created_at) * 1000).toISOString(),
+        text,
+        degraded_flags: flags,
+      };
+    })
+    // Structural exclusion: harness sends carry "[ref NNN]" tags, smoke sends
+    // carry "[smoke"; neither belongs in a guardian truth-tapping feed.
+    .filter((c) => !c.text.includes("[ref ") && !c.text.includes("[smoke"))
     .sort((a, b) => b.received_at.localeCompare(a.received_at))
     .slice(0, limit);
 }
