@@ -48,7 +48,7 @@ const SECTIONS: { title: string; items: string[] }[] = [
 export default function TrustPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
+      <Link href="/console" className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
         <ArrowLeft size={14} aria-hidden /> Console
       </Link>
       <header>

@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
   return (
     <main className="min-h-svh bg-[#0a0a0c] text-[#f2f2f4]">
       <div className="mx-auto max-w-4xl space-y-12 px-6 py-12">
-        <Link href="/landing" className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white">
           <ArrowLeft size={14} aria-hidden /> Landing
         </Link>
 
@@ -118,10 +118,10 @@ export default function HowItWorksPage() {
         </section>
 
         <div className="flex flex-wrap gap-3 border-t border-white/10 pt-8">
-          <Link href="/" className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black hover:opacity-90">
+          <Link href="/console" className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black hover:opacity-90">
             Open the console
           </Link>
-          <Link href="/landing" className="rounded-lg border border-white/15 px-5 py-2.5 text-sm text-white/80 hover:bg-white/5">
+          <Link href="/" className="rounded-lg border border-white/15 px-5 py-2.5 text-sm text-white/80 hover:bg-white/5">
             Back to the story
           </Link>
         </div>

@@ -89,7 +89,7 @@ export default function CaseDetailPage() {
     <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
       <div className="flex items-center justify-between gap-2">
         <Link
-          href="/queue"
+          href="/console/queue"
           className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg"
         >
           <ArrowLeft size={14} aria-hidden /> {copyFor(locale, "nav_queue")}

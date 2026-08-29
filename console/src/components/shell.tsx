@@ -22,11 +22,11 @@ import { copyFor, useLocale } from "@/lib/i18n";
 
 const NAV = [
   { href: "/", key: "nav_dashboard" as const, icon: LayoutDashboard },
-  { href: "/queue", key: "nav_queue" as const, icon: ClipboardList },
-  { href: "/review", key: "nav_review" as const, icon: Check },
-  { href: "/circle", key: "nav_circle" as const, icon: Users },
-  { href: "/settings", key: "nav_settings" as const, icon: Settings },
-  { href: "/audit", key: "nav_audit" as const, icon: ScrollText },
+  { href: "/console/queue", key: "nav_queue" as const, icon: ClipboardList },
+  { href: "/console/review", key: "nav_review" as const, icon: Check },
+  { href: "/console/circle", key: "nav_circle" as const, icon: Users },
+  { href: "/console/settings", key: "nav_settings" as const, icon: Settings },
+  { href: "/console/audit", key: "nav_audit" as const, icon: ScrollText },
 ];
 
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
@@ -50,7 +50,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
 
       <aside className="hidden w-52 shrink-0 flex-col border-r border-line bg-card md:flex">
         <div className="border-b border-line px-4 py-4">
-          <Link href="/" className="block">
+          <Link href="/console" className="block">
             <div className="text-sm font-semibold tracking-tight">
               {copyFor(locale, "app_name")}
             </div>

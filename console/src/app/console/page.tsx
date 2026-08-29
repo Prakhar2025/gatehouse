@@ -66,7 +66,7 @@ export default function DashboardPage() {
               ) : null}
             </div>
             <Link
-              href="/queue"
+              href="/console/queue"
               className="inline-flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-sm font-medium text-bg hover:opacity-90"
             >
               {copyFor(locale, "nav_queue")} <ArrowRight size={14} aria-hidden />

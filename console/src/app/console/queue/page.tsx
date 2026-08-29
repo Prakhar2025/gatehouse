@@ -98,7 +98,7 @@ export default function QueuePage() {
         setWarnFor(c.case_id);
       }
     } else if (e.key === "Escape") {
-      router.push("/");
+      router.push("/console");
     }
   };
 
