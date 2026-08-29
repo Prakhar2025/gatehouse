@@ -176,3 +176,10 @@ Root cause: python and chains return the falsy operand object itself, so [] and 
 Fix: the volume predicate is wrapped in bool(...); an empty window is explicitly not a quiet week because no volume was screened to prove the value.
 Prevention: any expression assigned to a strict bool field gets an explicit bool(...) or comparison construction; the windowing test drives the zero-record week permanently.
 Phase: evaluation layer
+
+## [2026-08-29] the soak report read test traffic as family traffic
+Symptom: the first interim soak report showed 103 cases with a 72.7 percent escalation rate; the real household window was 26 cases at 46 percent, and 93 items carried no created_at because they predate the persistence contract.
+Root cause: the cases table accumulates journey-harness runs, chaos fixtures, and smoke cases alongside live traffic with no marker distinguishing them; the report trusted every row equally. Soak honesty depends on the denominator, and the denominator was polluted.
+Fix: the interim report is scoped to the soak window and excludes tagged fixtures; recorded guard for the next harness change: automated senders must write a dedicated marker household so exclusion is structural rather than editorial.
+Prevention: any report over shared production tables must state its exclusion rules in the artifact itself; a denominator nobody can audit is a number nobody should trust.
+Phase: evaluation layer

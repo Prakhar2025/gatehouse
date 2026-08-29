@@ -83,6 +83,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             />
             api {health.data ? health.data.version : "offline"}
           </div>
+          <Link href="/trust" className="mt-1 block text-[11px] text-fg-subtle hover:text-fg">
+            Trust center
+          </Link>
         </div>
       </aside>
 

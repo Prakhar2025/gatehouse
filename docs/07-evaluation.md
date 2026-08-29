@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.3.1 |
+| Version | 0.3.2 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 04-agent-contracts |
-| Last updated | 2026-08-27 |
+| Last updated | 2026-08-29 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.3.2 | First live soak report generated through the real aggregation engine (interim artifact, soak window scoped, test traffic excluded and disclosed); trust center page live in the console linking measurement claims; soak-window item count 26 with escalations 12 |
 | 0.3.1 | STAGING runner mode shipped: real model leg over reserved-domain content with whole-run USD and call caps on one shared breaker, miss ledger export, stratified subsampling; first pre/post calibration pair against the real model published (false-gate 30.56 percent to 0.0), failure taxonomy written from real misses, cost report from measured spend |
 | 0.3.0 | P6 build-out: full-set generation contract fixed (600 cases, split table, overlap-free rule), LOCAL_MOCK full-pipeline runner added, calibration protocol defined (rule score bands are pack data, swept on dev split only, pre/post published), soak weekly report automated as pure aggregation plus a fetch script, trusted-domain tier recorded as the false-gate lever it calibrates against |
 | 0.2.0 | Harness component listing converted to data-flow Mermaid diagram |

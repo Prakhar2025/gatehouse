@@ -1,0 +1,28 @@
+{
+  "cases": 26,
+  "degraded_case_share": 0.0,
+  "escalation_rate": 0.4615,
+  "escalations": 12,
+  "guardian_overrides": 0,
+  "latency_p50_ms": null,
+  "latency_p95_ms": null,
+  "override_ledger_present": false,
+  "quiet_week": false,
+  "spend_mean_usd": 0.000271,
+  "spend_p95_usd": 0.0003,
+  "spend_total_usd": 0.007058,
+  "triage_counts": {
+    "": 13,
+    "DECISION": 8,
+    "NOISE": 2,
+    "SCREEN": 3
+  },
+  "verdict_counts": {
+    "SAFE": 14,
+    "SCAM": 4,
+    "SUSPICIOUS": 8
+  },
+  "window_days": 7,
+  "window_end": 1788393600,
+  "window_start": 1787788800
+}
