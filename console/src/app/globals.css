@@ -1,59 +1,61 @@
 @import "tailwindcss";
 
 /*
-  Gatehouse console tokens. One calm theme, light and dark, Linear/Stripe
-  density. Verdict colors are the only saturated hues on any screen because
-  they carry the product's meaning; everything else stays zinc and quiet.
+  Gatehouse console: dark-first operational theme. Premium comes from
+  typography, spacing discipline, and one saturated hue per verdict; never
+  from gradients, glass, or glow. Light theme stays available.
 */
 :root {
-  --background: #f7f7f8;
-  --card: #ffffff;
-  --card-muted: #fbfbfc;
-  --border-subtle: #e4e4e7;
-  --border-strong: #d4d4d8;
-  --foreground: #18181b;
-  --foreground-muted: #71717a;
-  --foreground-subtle: #a1a1aa;
-  --accent: #18181b;
+  color-scheme: dark;
+  --background: #0a0a0c;
+  --card: #131316;
+  --card-muted: #1a1a1f;
+  --border-subtle: #232329;
+  --border-strong: #34343c;
+  --foreground: #f2f2f4;
+  --foreground-muted: #a3a3ad;
+  --foreground-subtle: #6e6e78;
+  --accent: #f2f2f4;
 
-  --safe-fg: #166534;
-  --safe-bg: #f0fdf4;
-  --safe-border: #bbf7d0;
-  --suspicious-fg: #92400e;
-  --suspicious-bg: #fffbeb;
-  --suspicious-border: #fde68a;
-  --scam-fg: #991b1b;
-  --scam-bg: #fef2f2;
-  --scam-border: #fecaca;
-  --needs-human-fg: #1e40af;
-  --needs-human-bg: #eff6ff;
-  --needs-human-border: #bfdbfe;
+  --safe-fg: #3ddc84;
+  --safe-bg: #0c2318;
+  --safe-border: #14532d;
+  --suspicious-fg: #f5b83d;
+  --suspicious-bg: #2a1e06;
+  --suspicious-border: #6b4a0d;
+  --scam-fg: #ff6b6b;
+  --scam-bg: #2b0d0d;
+  --scam-border: #6e1c1c;
+  --needs-human-fg: #5ea0ff;
+  --needs-human-bg: #0e1c33;
+  --needs-human-border: #1d3a66;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #09090b;
-    --card: #111113;
-    --card-muted: #16161a;
-    --border-subtle: #27272a;
-    --border-strong: #3f3f46;
-    --foreground: #fafafa;
-    --foreground-muted: #a1a1aa;
-    --foreground-subtle: #71717a;
-    --accent: #fafafa;
+    color-scheme: light;
+    --background: #f6f6f7;
+    --card: #ffffff;
+    --card-muted: #fafafb;
+    --border-subtle: #e5e5e9;
+    --border-strong: #d2d2d8;
+    --foreground: #17171a;
+    --foreground-muted: #6b6b74;
+    --foreground-subtle: #9c9ca6;
+    --accent: #17171a;
 
-    --safe-fg: #4ade80;
-    --safe-bg: #052e16;
-    --safe-border: #14532d;
-    --suspicious-fg: #fbbf24;
-    --suspicious-bg: #451a03;
-    --suspicious-border: #78350f;
-    --scam-fg: #f87171;
-    --scam-bg: #450a0a;
-    --scam-border: #7f1d1d;
-    --needs-human-fg: #60a5fa;
-    --needs-human-bg: #172554;
-    --needs-human-border: #1e3a8a;
+    --safe-fg: #147a3d;
+    --safe-bg: #ecfdf3;
+    --safe-border: #b7e4c7;
+    --suspicious-fg: #8a5a06;
+    --suspicious-bg: #fff8e6;
+    --suspicious-border: #f0d48a;
+    --scam-fg: #b42323;
+    --scam-bg: #fdf0ef;
+    --scam-border: #f2c1c1;
+    --needs-human-fg: #1d4ed8;
+    --needs-human-bg: #eef4ff;
+    --needs-human-border: #c3d4f8;
   }
 }
 
@@ -86,21 +88,38 @@
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-size: 14px;
   font-feature-settings: "tnum" 1, "cv11" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--border-strong);
+  background: #3ddc8433;
 }
 
 :focus-visible {
-  outline: 2px solid var(--foreground-muted);
+  outline: 2px solid var(--needs-human-fg);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 3px;
+}
+
+/* Hairline polish: cards read as machined panels, not boxes */
+.border-line {
+  border-color: color-mix(in srgb, var(--border-subtle) 78%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

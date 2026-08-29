@@ -8,6 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  Check,
   ClipboardList,
   LayoutDashboard,
   ScrollText,
@@ -22,6 +23,7 @@ import { copyFor, useLocale } from "@/lib/i18n";
 const NAV = [
   { href: "/", key: "nav_dashboard" as const, icon: LayoutDashboard },
   { href: "/queue", key: "nav_queue" as const, icon: ClipboardList },
+  { href: "/review", key: "nav_review" as const, icon: Check },
   { href: "/circle", key: "nav_circle" as const, icon: Users },
   { href: "/settings", key: "nav_settings" as const, icon: Settings },
   { href: "/audit", key: "nav_audit" as const, icon: ScrollText },
