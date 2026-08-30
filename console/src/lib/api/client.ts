@@ -15,6 +15,7 @@ import type {
   MetricsSnapshot,
   SpendRollup,
 } from "./schemas";
+import { liveApi } from "./live";
 
 export interface GatehouseApi {
   getHealth(): Promise<Health>;
@@ -101,9 +102,14 @@ export class ApiError extends Error {
   }
 }
 
-let transport: GatehouseApi = mockApi;
+let transport: GatehouseApi | null = null;
 
-export const api = (): GatehouseApi => transport;
+/** The live transport is the default; previews and tests inject the mock
+ * explicitly via setTransport(mockApi). */
+export const api = (): GatehouseApi => {
+  if (!transport) transport = liveApi;
+  return transport;
+};
 
 /** Swap in the real fetch transport when the gateway is live. */
 export const setTransport = (t: GatehouseApi) => {
