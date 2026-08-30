@@ -128,6 +128,7 @@ async def run_engagement(
     channel: EngageChannel,
     *,
     household_opt_in: bool = True,
+    member_consent: bool = True,
     meter: SpendMeter | None = None,
     model: Any = None,
     blocked_terms: list[str] | None = None,
@@ -138,6 +139,8 @@ async def run_engagement(
 
     Falls back cleanly: budget refusal, model errors, and firewall outcomes all
     produce a defined EngagementResult, never an exception to the caller.
+    Consent is enforced at both scopes: the household flag AND the forwarding
+    member's own consent (doc 19: the member owns their case).
     """
     if not household_opt_in:
         return EngagementResult(
@@ -147,6 +150,15 @@ async def run_engagement(
             transcript=[],
             intent_confidence=0.0,
             reason_code="household_not_opted_in",
+        )
+    if not member_consent:
+        return EngagementResult(
+            case_id=case_id,
+            outcome=OUTCOME_NOT_ENABLED,
+            turns_used=0,
+            transcript=[],
+            intent_confidence=0.0,
+            reason_code="member_not_consented",
         )
 
     started = monotonic()

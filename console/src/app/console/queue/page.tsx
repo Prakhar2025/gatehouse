@@ -83,7 +83,7 @@ export default function QueuePage() {
       const c = cases[selected];
       if (c) {
         e.preventDefault();
-        router.push(`/cases/${c.case_id}`);
+        router.push(`/console/cases/${c.case_id}`);
       }
     } else if (e.key === "a") {
       const c = cases[selected];
@@ -158,7 +158,7 @@ export default function QueuePage() {
               aria-selected={i === selected}
               tabIndex={i === selected ? 0 : -1}
               onClick={() => setSelected(i)}
-              onDoubleClick={() => router.push(`/cases/${c.case_id}`)}
+              onDoubleClick={() => router.push(`/console/cases/${c.case_id}`)}
               className={`flex cursor-pointer flex-col gap-1 border-b border-line px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 ${
                 i === selected ? "bg-card-muted" : ""
               } ${i === selected ? "sm:border-l-2 sm:border-l-accent sm:pl-3.5" : ""}`}

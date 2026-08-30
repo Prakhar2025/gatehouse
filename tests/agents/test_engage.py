@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+import gatehouse.agents.engage as engage
 from gatehouse.agents.engage import (
     OUTCOME_BENIGN_EXIT,
     OUTCOME_FIREWALL_TRIP,
@@ -218,3 +219,37 @@ class TestDegradedPaths:
         )
         assert result.outcome == OUTCOME_BENIGN_EXIT
         assert result.intent_confidence == 0.1
+
+class _NullChannel:
+    """Channel double: never touched when consent is refused up front."""
+
+    def deliver(self, contact, text):
+        return True
+
+    def receive(self, contact):
+        return None
+
+
+def test_member_consent_refused_before_any_model_call():
+    """Per-member consent (doc 19): even with the household opted in, a case
+    forwarded by a member who has not consented to engagement must refuse
+    before the model is touched."""
+
+    class _NoCallModel:
+        async def structured_output(self, *a, **k):  # pragma: no cover
+            raise AssertionError("model must not be called without member consent")
+
+    result = _run(
+        engage.run_engagement(
+            "case-consent",
+            "+911234567890",
+            "confirm scam",
+            _NullChannel(),
+            household_opt_in=True,
+            member_consent=False,
+            model=_NoCallModel(),
+        )
+    )
+    assert result.outcome == engage.OUTCOME_NOT_ENABLED
+    assert result.reason_code == "member_not_consented"
+    assert result.turns_used == 0

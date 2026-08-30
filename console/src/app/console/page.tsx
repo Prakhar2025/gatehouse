@@ -176,7 +176,7 @@ export default function DashboardPage() {
               {open.slice(0, 5).map((c) => (
                 <li key={c.case_id}>
                   <Link
-                    href={`/cases/${c.case_id}`}
+                    href={`/console/cases/${c.case_id}`}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-card-muted"
                   >
                     <VerdictBadge verdict={c.verdict ?? "NEEDS_HUMAN"} small />

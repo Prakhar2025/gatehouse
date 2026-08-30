@@ -11,6 +11,7 @@ import {
   Check,
   ClipboardList,
   LayoutDashboard,
+  Mail,
   ScrollText,
   Settings,
   Users,
@@ -21,9 +22,10 @@ import { api } from "@/lib/api/client";
 import { copyFor, useLocale } from "@/lib/i18n";
 
 const NAV = [
-  { href: "/", key: "nav_dashboard" as const, icon: LayoutDashboard },
+  { href: "/console", key: "nav_dashboard" as const, icon: LayoutDashboard },
   { href: "/console/queue", key: "nav_queue" as const, icon: ClipboardList },
   { href: "/console/review", key: "nav_review" as const, icon: Check },
+  { href: "/console/digest", key: "nav_digest" as const, icon: Mail },
   { href: "/console/circle", key: "nav_circle" as const, icon: Users },
   { href: "/console/settings", key: "nav_settings" as const, icon: Settings },
   { href: "/console/audit", key: "nav_audit" as const, icon: ScrollText },
