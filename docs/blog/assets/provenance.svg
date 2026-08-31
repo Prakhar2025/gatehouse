@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <rect width="1200" height="675" fill="#0a0a0b"/>
+  <text x="60" y="70" font-family="Consolas, monospace" font-size="18" fill="#8f8f96" letter-spacing="4">BAND_PROVENANCE: THE FIELD THAT TURNED ANGER INTO A QUERY</text>
+  <g font-family="Consolas, monospace" font-size="13">
+    <rect x="60" y="110" width="500" height="200" rx="10" fill="#111113" stroke="#34343c"/>
+    <text x="85" y="145" fill="#ece9e4" font-weight="700">BEFORE: model opinion, uncapped</text>
+    <text x="85" y="180" fill="#ff6b6b">otp_forward 16/16 flagged (model DECISION)</text>
+    <text x="85" y="210" fill="#ff6b6b">legit_bank_offer 15/24 flagged (SCREEN+)</text>
+    <text x="85" y="240" fill="#ff6b6b">delivery_update 10/20 flagged (COD panic)</text>
+    <text x="85" y="282" fill="#8f8f96">false_gate_rate = 0.306 (bar: 0.05)</text>
+    <rect x="640" y="110" width="500" height="200" rx="10" fill="#111113" stroke="#14532d"/>
+    <text x="665" y="145" fill="#ece9e4" font-weight="700">AFTER: provenance-gated cap</text>
+    <text x="665" y="180" fill="#3ddc84">band_source == model AND rule_class weak</text>
+    <text x="665" y="210" fill="#3ddc84">AND no action channel (link/phone/VPA/ask)</text>
+    <text x="665" y="240" fill="#3ddc84">rules evidence never capped · emergency never</text>
+    <text x="665" y="282" fill="#8f8f96">false_gate_rate = 0.000 · Wilson CI [0, 0.0253]</text>
+  </g>
+  <path d="M560 210 L640 210" stroke="#ffb454" stroke-width="2" marker-end="url(#a)"/>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#ffb454"/></marker></defs>
+  <g font-family="Consolas, monospace" font-size="13" fill="#8f8f96">
+    <text x="60" y="370">the rule, verbatim from the guardian policy:</text>
+  </g>
+  <rect x="60" y="390" width="1080" height="150" rx="10" fill="#111113" stroke="#34343c"/>
+  <g font-family="Consolas, monospace" font-size="14">
+    <text x="90" y="425" fill="#ece9e4">channel_free_cap = no links AND no identifiers AND no payment ask</text>
+    <text x="90" y="455" fill="#ece9e4">  AND band_source == "model" AND rule_class in {"NOISE","INFO"}</text>
+    <text x="90" y="485" fill="#ffb454">  AND not hard_fails AND band in {"SCREEN","DECISION"}</text>
+    <text x="90" y="515" fill="#55555c"># deterministic rule evidence is never capped. emergency is never capped.</text>
+  </g>
+  <text x="60" y="590" font-family="Consolas, monospace" font-size="13" fill="#8f8f96">44 real misses in · 0 out · same commit carries pre and post artifacts</text>
+  <rect x="0" y="668" width="1200" height="7" fill="#ffb454"/>
+</svg>

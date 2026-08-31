@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <rect width="1200" height="675" fill="#0a0a0b"/>
+  <text x="60" y="70" font-family="Consolas, monospace" font-size="18" fill="#8f8f96" letter-spacing="4">THE PIPELINE</text>
+  <g font-family="Arial" font-size="17" font-weight="700">
+    <rect x="40" y="120" width="180" height="64" rx="10" fill="#111113" stroke="#34343c"/><text x="130" y="158" text-anchor="middle" fill="#ece9e4">Forward</text>
+    <rect x="270" y="120" width="180" height="64" rx="10" fill="#111113" stroke="#34343c"/><text x="360" y="150" text-anchor="middle" fill="#ece9e4">Fence</text><text x="360" y="170" text-anchor="middle" fill="#8f8f96" font-size="12" font-weight="400">canary + quarantine</text>
+    <rect x="500" y="120" width="180" height="64" rx="10" fill="#111113" stroke="#ffb454"/><text x="590" y="150" text-anchor="middle" fill="#ece9e4">Triage</text><text x="590" y="170" text-anchor="middle" fill="#8f8f96" font-size="12" font-weight="400">Bedrock Nova Micro</text>
+    <rect x="730" y="120" width="180" height="64" rx="10" fill="#111113" stroke="#34343c"/><text x="820" y="150" text-anchor="middle" fill="#ece9e4">Verify</text><text x="820" y="170" text-anchor="middle" fill="#8f8f96" font-size="12" font-weight="400">issuer + trusted tiers</text>
+    <rect x="960" y="120" width="180" height="64" rx="10" fill="#111113" stroke="#34343c"/><text x="1050" y="150" text-anchor="middle" fill="#ece9e4">Graph</text><text x="1050" y="170" text-anchor="middle" fill="#8f8f96" font-size="12" font-weight="400">HMAC identities</text>
+  </g>
+  <g stroke="#5b5b66" stroke-width="1.5"><path d="M220 152H270M450 152H500M680 152H730M910 152H960"/></g>
+  <g stroke="#5b5b66" stroke-width="1.5"><path d="M960 210 C 900 260, 860 260, 820 184" fill="none"/><text x="905" y="262" fill="#55555c" font-family="Consolas, monospace" font-size="12">evidence, both legs</text></g>
+  <rect x="430" y="300" width="340" height="70" rx="10" fill="#111113" stroke="#ffb454"/>
+  <text x="600" y="330" text-anchor="middle" fill="#ece9e4" font-family="Arial" font-size="18" font-weight="700">Guardian policy</text>
+  <text x="600" y="352" text-anchor="middle" fill="#8f8f96" font-family="Consolas, monospace" font-size="12">provenance: band_source + rule_class</text>
+  <g stroke="#5b5b66" stroke-width="1.5"><path d="M600 240V300"/></g>
+  <g font-family="Consolas, monospace" font-size="14">
+    <rect x="180" y="440" width="240" height="54" rx="8" fill="#0c2318" stroke="#14532d"/><text x="300" y="473" text-anchor="middle" fill="#3ddc84">SAFE: handled silently</text>
+    <rect x="480" y="440" width="240" height="54" rx="8" fill="#2a1e06" stroke="#6b4a0d"/><text x="600" y="473" text-anchor="middle" fill="#ffb454">SUSPICIOUS: hold + review</text>
+    <rect x="780" y="440" width="240" height="54" rx="8" fill="#2b0d0d" stroke="#6e1c1c"/><text x="900" y="473" text-anchor="middle" fill="#ff6b6b">SCAM: warn + bundle</text>
+  </g>
+  <g stroke="#5b5b66" stroke-width="1" stroke-dasharray="3 3"><path d="M520 370 L300 440M600 370V440M680 370 L900 440"/></g>
+  <rect x="180" y="530" width="840" height="70" rx="10" fill="#111113" stroke="#34343c"/>
+  <text x="600" y="560" text-anchor="middle" fill="#ece9e4" font-family="Consolas, monospace" font-size="14">evidence bundle: claims · findings · graph · cost · chain hash</text>
+  <text x="600" y="584" text-anchor="middle" fill="#55555c" font-family="Consolas, monospace" font-size="12">immutable · TTL 400d · pinned pack v0.2.0</text>
+  <rect x="0" y="668" width="1200" height="7" fill="#ffb454"/>
+</svg>
