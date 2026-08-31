@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <rect width="1200" height="675" fill="#0a0a0b"/>
+  <g transform="translate(600,250)" text-anchor="middle">
+    <text font-family="Arial Black, Arial" font-size="70" font-weight="800" fill="#ece9e4">We published</text>
+    <text y="80" font-family="Arial Black, Arial" font-size="70" font-weight="800" fill="#ff6b6b">30.6%</text>
+    <text y="150" font-family="Arial Black, Arial" font-size="40" font-weight="800" fill="#ece9e4">before we published 0.0%</text>
+    <text y="210" font-family="Consolas, monospace" font-size="18" fill="#8f8f96" letter-spacing="5">THE MEASUREMENT PROTOCOL · GATEHOUSE</text>
+  </g>
+  <rect x="0" y="668" width="1200" height="7" fill="#ffb454"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <rect width="1200" height="675" fill="#0a0a0b"/>
+  <g transform="translate(600,240)" text-anchor="middle">
+    <text font-family="Arial Black, Arial" font-size="64" font-weight="800" fill="#ece9e4">The agent that</text>
+    <text y="76" font-family="Arial Black, Arial" font-size="64" font-weight="800" fill="#ffb454">cannot lie for you</text>
+    <text y="150" font-family="Consolas, monospace" font-size="18" fill="#8f8f96" letter-spacing="5">FENCING · CANARIES · BREAKER ECONOMICS</text>
+  </g>
+  <g transform="translate(600,480)" text-anchor="middle" font-family="Consolas, monospace" font-size="20">
+    <text fill="#3ddc84">6 turns</text>
+    <text x="120" fill="#ffb454">10 min wall</text>
+    <text x="300" fill="#ff6b6b">hard USD caps</text>
+    <text x="500" fill="#8f8f96">consent, both scopes</text>
+  </g>
+  <rect x="0" y="668" width="1200" height="7" fill="#ffb454"/>
+</svg>
