@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from gatehouse.spend import BudgetExceeded, SpendMeter
+from gatehouse.spend import (
+    BudgetExceeded,
+    HourlyBreaker,
+    SpendMeter,
+    get_hourly_breaker,
+    reset_hourly_breaker,
+)
 
 
 class TestEstimate:
@@ -50,3 +56,65 @@ class TestMeter:
         m = SpendMeter(max_usd=0.0000001, max_calls=1)
         # zero calls so far: allowed (breaker checks BEFORE call)
         assert m.allow() is True
+
+
+class TestHourlyBreaker:
+    """Charter principle 7: caps per hour AND per investigation.
+
+    The per-case meter is rebuilt for every investigation, so on its own it
+    bounds one case and nothing above it. These pin the ceiling.
+    """
+
+    def test_allows_up_to_the_cap_then_refuses(self) -> None:
+        breaker = HourlyBreaker(max_calls_per_hour=3)
+        for _ in range(3):
+            assert breaker.allow(now=1000.0)
+            breaker.record(now=1000.0)
+        assert breaker.allow(now=1000.0) is False
+
+    def test_calls_age_out_of_the_window(self) -> None:
+        breaker = HourlyBreaker(max_calls_per_hour=2)
+        breaker.record(now=1000.0)
+        breaker.record(now=1000.0)
+        assert breaker.allow(now=1000.0) is False
+        # One hour and a second later the window has emptied.
+        assert breaker.allow(now=1000.0 + 3601.0) is True
+
+    def test_ceiling_holds_across_separate_meters(self) -> None:
+        """The defect this closes: a fresh meter per case meant no ceiling."""
+        shared = HourlyBreaker(max_calls_per_hour=2)
+        first = SpendMeter(max_usd=1.0, max_calls=10, hourly=shared)
+        second = SpendMeter(max_usd=1.0, max_calls=10, hourly=shared)
+
+        assert first.allow()
+        first.record("triage", "amazon.nova-micro-v1:0", 10, 10)
+        assert second.allow()
+        second.record("triage", "amazon.nova-micro-v1:0", 10, 10)
+
+        # Both meters are far under their own budgets and both must refuse.
+        assert first.total_calls == 1
+        assert second.total_calls == 1
+        assert first.allow() is False
+        assert second.allow() is False
+
+    def test_meter_without_a_breaker_is_unchanged(self) -> None:
+        """Existing callers that pass no breaker keep their exact behaviour."""
+        meter = SpendMeter(max_usd=1.0, max_calls=2)
+        assert meter.allow()
+        meter.record("triage", "amazon.nova-micro-v1:0", 10, 10)
+        assert meter.allow()
+
+    def test_per_case_budget_still_refuses_first(self) -> None:
+        """The hour ceiling widens nothing: both budgets must agree."""
+        generous = HourlyBreaker(max_calls_per_hour=1000)
+        meter = SpendMeter(max_usd=1.0, max_calls=1, hourly=generous)
+        meter.record("triage", "amazon.nova-micro-v1:0", 10, 10)
+        assert meter.allow() is False
+
+    def test_singleton_is_shared_and_resettable(self) -> None:
+        reset_hourly_breaker()
+        one = get_hourly_breaker(5)
+        two = get_hourly_breaker(5)
+        assert one is two
+        reset_hourly_breaker()
+        assert get_hourly_breaker(5) is not one

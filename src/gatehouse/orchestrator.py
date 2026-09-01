@@ -39,7 +39,7 @@ from gatehouse.graph.hashing import extract_identifiers, hash_identifier
 from gatehouse.graph.store import GraphStore, finding_empty, finding_unavailable
 from gatehouse.logging_utils import get_logger
 from gatehouse.packs.schemas import CountryPack
-from gatehouse.spend import SpendMeter
+from gatehouse.spend import SpendMeter, get_hourly_breaker
 from gatehouse.tracing import CaseTrace
 
 log = get_logger("gatehouse.orchestrator")
@@ -99,7 +99,11 @@ async def investigate(
     """Run the full pipeline over one signal."""
     s = settings or get_settings()
     meter = meter or SpendMeter(
-        max_usd=s.max_usd_per_investigation, max_calls=s.max_model_calls_per_investigation
+        max_usd=s.max_usd_per_investigation,
+        max_calls=s.max_model_calls_per_investigation,
+        # The hour ceiling sits above every per-case budget: without it a
+        # flood of forwards is a flood of independent budgets (principle 7).
+        hourly=get_hourly_breaker(s.breaker_hourly_call_cap),
     )
 
     # 1) fence (pure normalization; total by construction)

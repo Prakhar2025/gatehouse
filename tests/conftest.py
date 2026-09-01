@@ -11,7 +11,10 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+from collections.abc import Iterator
 from typing import Any
+
+import pytest
 
 _EMPTY_DOTENV = pathlib.Path(__file__).resolve().parent / "dotenv-empty"
 _EMPTY_DOTENV.touch(exist_ok=True)
@@ -46,3 +49,20 @@ def assert_dynamo_grammar_safe(call_kwargs: dict[str, Any]) -> None:
                 f"{key} uses bare reserved word '{hit.group(0)}': {expr!r}. "
                 "Use ExpressionAttributeNames placeholders."
             )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_hourly_breaker() -> Iterator[None]:
+    """Reset the process-wide spend breaker between tests.
+
+    The hour ceiling is deliberately a module singleton, which makes it
+    shared state the suite would otherwise carry from test to test: a run
+    long enough to reach the cap would start refusing calls in whichever
+    test happened to be last, and the failure would look like anything but
+    a leaked counter.
+    """
+    from gatehouse.spend import reset_hourly_breaker
+
+    reset_hourly_breaker()
+    yield
+    reset_hourly_breaker()

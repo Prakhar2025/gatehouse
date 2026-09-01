@@ -14,6 +14,7 @@ Design notes:
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass, field
 
 # USD per 1M tokens, input/output, from the Aug 2026 pricing review.
@@ -40,13 +41,65 @@ class CallRecord:
 
 
 @dataclass
+class HourlyBreaker:
+    """Rolling cap on model calls per hour, above every per-case budget.
+
+    The per-case meter cannot bound spend ACROSS cases: a fresh meter is
+    built for every investigation, so a flood of forwards is a flood of
+    independent budgets with no ceiling over them. Charter principle 7 asks
+    for caps per hour and per investigation; this is the per-hour half.
+
+    Scope honesty: this is process-level state. Under Lambda that is one warm
+    container, so a fan-out across many cold containers can still exceed the
+    cap in aggregate. A true cross-invocation ceiling needs a shared counter
+    (a DynamoDB atomic add on an hour-bucketed key). Until that lands, this
+    bounds the runaway that actually happens in practice, which is one hot
+    container looping, and it never under-reports: refusing early is the safe
+    direction for a spend guard.
+    """
+
+    max_calls_per_hour: int
+    _calls: list[float] = field(default_factory=list)
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def _prune(self, now: float) -> None:
+        cutoff = now - 3600.0
+        self._calls = [t for t in self._calls if t > cutoff]
+
+    def allow(self, now: float | None = None) -> bool:
+        """Breaker check BEFORE a call is made."""
+        moment = time.time() if now is None else now
+        with self._lock:
+            self._prune(moment)
+            return len(self._calls) < self.max_calls_per_hour
+
+    def record(self, now: float | None = None) -> None:
+        """Account one call against the hour window."""
+        moment = time.time() if now is None else now
+        with self._lock:
+            self._prune(moment)
+            self._calls.append(moment)
+
+    @property
+    def calls_this_hour(self) -> int:
+        with self._lock:
+            self._prune(time.time())
+            return len(self._calls)
+
+
+@dataclass
 class SpendMeter:
-    """Accumulates CallRecords for one case (or any scope you choose)."""
+    """Accumulates CallRecords for one case (or any scope you choose).
+
+    An optional HourlyBreaker is consulted alongside the per-case budget, so
+    a single meter cannot authorise a call the hour has already spent.
+    """
 
     max_usd: float
     max_calls: int
     records: list[CallRecord] = field(default_factory=list)
     _lock: threading.Lock = field(default_factory=threading.Lock)
+    hourly: HourlyBreaker | None = None
 
     @staticmethod
     def estimate_usd(model_id: str, input_tokens: int, output_tokens: int) -> float:
@@ -81,6 +134,10 @@ class SpendMeter:
         )
         with self._lock:
             self.records.append(rec)
+        # The hour is charged wherever the case is charged; a call accounted
+        # to one budget and not the other is a hole in the ceiling.
+        if self.hourly is not None:
+            self.hourly.record()
         return rec
 
     @property
@@ -94,12 +151,43 @@ class SpendMeter:
             return len(self.records)
 
     def allow(self) -> bool:
-        """Breaker check BEFORE a call is made."""
+        """Breaker check BEFORE a call is made.
+
+        Both ceilings must agree. The hour cap is checked too, so refusing is
+        the union of the two budgets rather than the per-case one alone.
+        """
         with self._lock:
             under_calls = len(self.records) < self.max_calls
             under_budget = sum(r.est_usd for r in self.records) < self.max_usd
-            return under_calls and under_budget
+        if not (under_calls and under_budget):
+            return False
+        return self.hourly.allow() if self.hourly is not None else True
 
 
 class BudgetExceeded(Exception):
     """Raised by the guard when the breaker refuses a call."""
+
+
+_HOURLY_BREAKER: HourlyBreaker | None = None
+_BREAKER_LOCK = threading.Lock()
+
+
+def get_hourly_breaker(max_calls_per_hour: int) -> HourlyBreaker:
+    """Process-wide breaker singleton.
+
+    Shared deliberately: a per-caller breaker would be per-case again, which
+    is the gap this exists to close. The cap is read once per process, so
+    changing it takes a redeploy, same as every other breaker constant.
+    """
+    global _HOURLY_BREAKER
+    with _BREAKER_LOCK:
+        if _HOURLY_BREAKER is None:
+            _HOURLY_BREAKER = HourlyBreaker(max_calls_per_hour=max_calls_per_hour)
+        return _HOURLY_BREAKER
+
+
+def reset_hourly_breaker() -> None:
+    """Drop the singleton. Tests only: process state must not leak between them."""
+    global _HOURLY_BREAKER
+    with _BREAKER_LOCK:
+        _HOURLY_BREAKER = None
