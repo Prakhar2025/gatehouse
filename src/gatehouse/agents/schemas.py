@@ -12,6 +12,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from gatehouse.constants import SignalClass as SignalClass  # explicit re-export
+from gatehouse.constants import SilenceBand as SilenceBand  # explicit re-export
 
 Verdict = Literal["SAFE", "SUSPICIOUS", "SCAM", "NEEDS_HUMAN"]
 CheckType = Literal[
@@ -102,6 +103,10 @@ class GuardianPackage(BaseModel):
     top_evidence: list[str] = Field(default_factory=list)
     recommended_action: str
     degraded_flags: list[str] = Field(default_factory=list)
+    # Graduated silence law (doc 19 section 3). Defaults to the band that
+    # surfaces to a human: a package that somehow skipped band computation
+    # must never be silently swallowed.
+    silence_band: SilenceBand = "BADGED_RING"
 
 
 EngagementDirection = Literal["OUT", "IN", "BLOCKED", "MODEL_ERROR"]

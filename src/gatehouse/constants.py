@@ -42,3 +42,15 @@ MAX_DISTINCT_COUNTED = 3
 SCORE_SILENT_KILL = 0.95
 SCORE_ESCALATE = 0.70
 SCORE_SCREEN = 0.40
+
+# --- graduated silence law (doc 19 section 3) ---
+# Silence is the product; alerting is the failure mode we are replacing. The
+# band is computed on every case and is the contract the passive arrival
+# filters (v1.5+) consume. In v1 it governs whether the GUARDIAN is paged:
+# the member who forwarded a signal always gets their answer.
+SilenceBand = Literal["SILENT_KILL", "AGENT_SCREEN", "BADGED_RING", "PASS"]
+
+BAND_SILENT_KILL: SilenceBand = "SILENT_KILL"  # no human paged; weekly report entry
+BAND_AGENT_SCREEN: SilenceBand = "AGENT_SCREEN"  # a human sees the result, never the panic
+BAND_BADGED_RING: SilenceBand = "BADGED_RING"  # surfaced with a risk badge; the human decides
+BAND_PASS: SilenceBand = "PASS"  # noqa: S105 - band name, not a credential

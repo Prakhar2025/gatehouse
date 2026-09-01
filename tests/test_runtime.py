@@ -123,7 +123,10 @@ class TestFullLoop:
         outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT)))
         assert outcome.status == "investigated"
         assert outcome.verdict == "SCAM"
-        assert outcome.escalated == "sent"
+        # Graduated silence law (doc 19 section 3): a settled scam at or above
+        # the silent-kill floor is handled without paging the guardian. The
+        # member still gets warned, which the reply test below pins.
+        assert outcome.escalated == "silenced"
         assert outcome.spend_usd >= 0.0
         bundle = rt.bundles.latest(HH1, str(outcome.case_id))
         assert bundle is not None
@@ -163,6 +166,36 @@ class TestDuplicateProtection:
         assert a.status == "investigated"
         assert b.status == "investigated"
         assert a.case_id != b.case_id
+
+
+class TestSilenceLaw:
+    """Doc 19 section 3 at the escalation boundary: who actually gets paged."""
+
+    def test_settled_scam_does_not_page_the_guardian(self, rt: Any) -> None:
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT)))
+        assert outcome.escalated == "silenced"
+        assert rt.notifications is None or not getattr(rt.notifications, "sent", [])
+
+    def test_silenced_case_still_warns_the_member(self, rt: Any) -> None:
+        """Silence is toward the guardian, never toward the person who asked."""
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(SCAM_TEXT)))
+        assert outcome.escalated == "silenced"
+        assert "Do not pay" in outcome.reply_text
+
+    def test_panic_overrides_the_band(self, rt: Any) -> None:
+        """A panic press is the member explicitly asking for a human."""
+        rt.model = scam_model()
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(f"/panic {SCAM_TEXT}")))
+        assert outcome.escalated == "sent"
+
+    def test_unsettled_case_still_reaches_the_guardian(self, rt: Any) -> None:
+        """Only settled scams go silent; a gray case must still be escalated."""
+        rt.model = MockModel(tool_payload={"scam_likelihood": 0.60, "reason_code": "URL_RISK"})
+        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(GRAY_TEXT)))
+        assert outcome.verdict == "SUSPICIOUS"
+        assert outcome.escalated == "sent"
 
 
 class TestQuietHours:

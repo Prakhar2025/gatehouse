@@ -22,8 +22,10 @@ def _rec(
     spend: float = 0.001,
     override: bool | None = None,
     household: str = "fam-1",
+    band: str | None = None,
 ) -> CaseRecord:
     return CaseRecord(
+        silence_band=band,
         case_id=case_id,
         household_id=household,
         created_at=created,
@@ -144,3 +146,69 @@ class TestRender:
         text = render_markdown(build_weekly_report(records, T0))
         for needle in ("Cases screened | 2", "| SCAM | 1 |", "Quiet week"):
             assert needle in text
+
+
+class TestSilenceLedger:
+    """Doc 19 layer G: what the household never had to see, counted honestly."""
+
+    def test_silent_kills_and_undisturbed_share(self) -> None:
+        report = build_weekly_report(
+            [
+                _rec("a", T0, verdict="SCAM", band="SILENT_KILL"),
+                _rec("b", T0, verdict="SAFE", band="PASS"),
+                _rec("c", T0, verdict="SUSPICIOUS", band="AGENT_SCREEN"),
+                _rec("d", T0, verdict="SUSPICIOUS", band="BADGED_RING"),
+            ],
+            T0,
+        )
+        assert report.silent_kills == 1
+        # Two of four never reached a human: one silenced, one passed through.
+        assert report.undisturbed_share == 0.5
+        assert report.band_counts["SILENT_KILL"] == 1
+        assert report.unbanded_cases == 0
+
+    def test_cases_predating_the_band_are_unbanded_not_passed(self) -> None:
+        """The undisturbed share may only count cases that recorded a band."""
+        report = build_weekly_report(
+            [
+                _rec("old1", T0, verdict="SAFE"),
+                _rec("old2", T0, verdict="SAFE"),
+                _rec("new", T0, verdict="SCAM", band="SILENT_KILL"),
+            ],
+            T0,
+        )
+        assert report.unbanded_cases == 2
+        # One banded case, and it was silenced: the share is over banded only.
+        assert report.undisturbed_share == 1.0
+        assert report.silent_kills == 1
+
+    def test_empty_window_reports_zero_share_without_crashing(self) -> None:
+        report = build_weekly_report([], T0)
+        assert report.silent_kills == 0
+        assert report.undisturbed_share == 0.0
+        assert report.unbanded_cases == 0
+
+    def test_band_survives_the_dynamo_adapter(self) -> None:
+        record = _record_from_item(
+            {
+                "pk": {"S": "HOUSEHOLD#fam-1"},
+                "sk": {"S": "CASE#abc"},
+                "created_at": {"N": "10"},
+                "verdict": {"S": "SCAM"},
+                "triage_class": {"S": "DECISION"},
+                "silence_band": {"S": "SILENT_KILL"},
+            }
+        )
+        assert record.silence_band == "SILENT_KILL"
+
+    def test_row_without_a_band_stays_none(self) -> None:
+        record = _record_from_item(
+            {
+                "pk": {"S": "HOUSEHOLD#fam-1"},
+                "sk": {"S": "CASE#abc"},
+                "created_at": {"N": "10"},
+                "verdict": {"S": "SAFE"},
+                "triage_class": {"S": "NOISE"},
+            }
+        )
+        assert record.silence_band is None

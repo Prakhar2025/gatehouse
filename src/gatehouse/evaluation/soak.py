@@ -21,6 +21,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from gatehouse.constants import BAND_PASS, BAND_SILENT_KILL
+
 SECONDS_PER_DAY = 86400
 DEFAULT_WINDOW_DAYS = 7
 
@@ -40,6 +42,9 @@ class CaseRecord(BaseModel):
     degraded_flags: list[str] = Field(default_factory=list)
     forward_ms: float | None = None
     guardian_override: bool | None = None
+    # Doc 19 section 3. None for cases persisted before the band existed, so
+    # the report can say "unbanded" instead of silently counting them as PASS.
+    silence_band: str | None = None
 
 
 class WeeklySoakReport(BaseModel):
@@ -64,6 +69,11 @@ class WeeklySoakReport(BaseModel):
     guardian_overrides: int
     override_ledger_present: bool
     quiet_week: bool
+    # The silence ledger: how much of the week the household never had to see.
+    band_counts: dict[str, int]
+    silent_kills: int
+    undisturbed_share: float
+    unbanded_cases: int
 
 
 def _percentile(values: list[float], fraction: float) -> float:
@@ -104,6 +114,15 @@ def build_weekly_report(
     overrides = [r for r in in_window if r.guardian_override is not None and r.guardian_override]
     any_ledger_signal = any(r.guardian_override is not None for r in in_window)
 
+    # Silence ledger. Cases predating the band carry None and are reported as
+    # unbanded rather than folded into PASS: the undisturbed share is a claim
+    # about what the household was spared, and it may only count cases that
+    # actually recorded a band.
+    banded = [r.silence_band for r in in_window if r.silence_band is not None]
+    unbanded = len(in_window) - len(banded)
+    silent_kills = sum(1 for b in banded if b == BAND_SILENT_KILL)
+    undisturbed = sum(1 for b in banded if b in (BAND_SILENT_KILL, BAND_PASS))
+
     total_spend = round(sum(spends), 6)
     return WeeklySoakReport(
         window_days=window_days,
@@ -126,6 +145,10 @@ def build_weekly_report(
         # pydantic rejects on this strict bool field; empty is never quiet
         # anyway because no volume was screened to prove the value.
         quiet_week=bool(in_window) and escalations == 0,
+        band_counts=_counts(banded),
+        silent_kills=silent_kills,
+        undisturbed_share=round(undisturbed / len(banded), 4) if banded else 0.0,
+        unbanded_cases=unbanded,
     )
 
 
@@ -142,6 +165,9 @@ def render_markdown(report: WeeklySoakReport) -> str:
         f"| Cases screened | {report.cases} |",
         f"| Escalations (SUSPICIOUS+SCAM) | {report.escalations} ({report.escalation_rate}) |",
         f"| Quiet week | {'yes' if report.quiet_week else 'no'} |",
+        f"| Silent kills (never paged a human) | {report.silent_kills} |",
+        f"| Undisturbed share | {report.undisturbed_share} |",
+        f"| Unbanded cases (predate the band) | {report.unbanded_cases} |",
         f"| Degraded-case share | {report.degraded_case_share} |",
         f"| Spend total / mean / p95 USD | {report.spend_total_usd} / "
         f"{report.spend_mean_usd} / {report.spend_p95_usd} |",
@@ -196,6 +222,9 @@ def _record_from_item(item: dict[str, Any]) -> CaseRecord:
         reason_codes=[str(r) for r in reasons if r != "NONE"],
         spend_usd=float(spend),
         degraded_flags=[str(f) for f in flags if f != "NONE"],
+        # Absent on rows written before the band shipped; stays None so the
+        # report counts them as unbanded rather than inventing a PASS.
+        silence_band=(str(band) if (band := plain("silence_band")) else None),
     )
 
 

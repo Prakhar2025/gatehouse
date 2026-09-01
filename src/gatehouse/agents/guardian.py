@@ -4,10 +4,14 @@ Pure policy composition over upstream findings: no model calls at all in P2.
 Verdict mapping is deterministic from evidence, thresholds from settings, so
 the whole decision path is reproducible and auditable.
 
-Verdict policy (graduated, doc 19 section 3):
+Verdict policy:
 - any issuer/rail FAIL -> SCAM (confidence from evidence weights)
 - domain INCONCLUSIVE + strong triage -> SUSPICIOUS
 - everything else -> SAFE (silent path)
+
+Every package additionally carries its silence band (doc 19 section 3), which
+governs whether a human is paged and is the contract the passive arrival
+filters consume. See compute_silence_band.
 """
 
 from __future__ import annotations
@@ -20,10 +24,48 @@ from gatehouse.agents.schemas import (
     VerificationFinding,
 )
 from gatehouse.config import Settings
+from gatehouse.constants import (
+    BAND_AGENT_SCREEN,
+    BAND_BADGED_RING,
+    BAND_PASS,
+    BAND_SILENT_KILL,
+    SilenceBand,
+)
 
 
 def _round(v: float) -> float:
     return round(v, 4)
+
+
+def compute_silence_band(verdict: Verdict, confidence: float, settings: Settings) -> SilenceBand:
+    """Map a composed verdict onto the graduated silence law (doc 19 section 3).
+
+    Silence is earned, never assumed, so the ladder is deliberately
+    conservative in three places:
+
+    - NEEDS_HUMAN is the pipeline explicitly asking for a person. It can never
+      be silenced, whatever the confidence attached to it.
+    - Only SCAM reaches SILENT_KILL. SUSPICIOUS means the evidence did not
+      settle, and an unsettled case is not something to handle in silence
+      however high the number next to it reads.
+    - SAFE means no threat was found, which is PASS: invisible processing,
+      not a suppressed alarm.
+
+    Thresholds come from settings so one environment variable moves the
+    operating point, and doc 19 acceptance criterion 2 is satisfied by
+    configuration rather than by a code change.
+    """
+    if verdict == "NEEDS_HUMAN":
+        return BAND_BADGED_RING
+    if verdict == "SAFE":
+        return BAND_PASS
+    if verdict == "SCAM" and confidence >= settings.silent_kill_floor:
+        return BAND_SILENT_KILL
+    if confidence >= settings.gray_band_high:
+        return BAND_AGENT_SCREEN
+    if confidence >= settings.gray_band_low:
+        return BAND_BADGED_RING
+    return BAND_PASS
 
 
 def compose_package(
@@ -175,11 +217,13 @@ def compose_package(
     else:
         action = "none"
 
+    final_confidence = _round(confidence)
     return GuardianPackage(
         verdict=verdict,
-        confidence=_round(confidence),
+        confidence=final_confidence,
         reason_codes=reason_codes,
         top_evidence=evidence[:3],
         recommended_action=action,
         degraded_flags=degraded,
+        silence_band=compute_silence_band(verdict, final_confidence, settings),
     )

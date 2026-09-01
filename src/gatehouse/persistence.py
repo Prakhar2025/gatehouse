@@ -84,6 +84,10 @@ class CaseStore:
             "reason_codes": {"SS": package.reason_codes or ["NONE"]},
             "spend_usd": {"N": str(spend_usd)},
             "degraded_flags": {"SS": package.degraded_flags or ["NONE"]},
+            # The silence ledger reads this attribute off the case row. The
+            # band is also inside the bundle package, but the weekly report
+            # must not have to open a bundle to count what stayed silent.
+            "silence_band": {"S": package.silence_band},
             # Creation timestamp drives the weekly soak report windows;
             # without it the report cannot bucket cases into weeks.
             "created_at": {"N": str(int(ts))},

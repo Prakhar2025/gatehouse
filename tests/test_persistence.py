@@ -77,6 +77,7 @@ class TestCaseStore:
             top_evidence=["e"],
             recommended_action="warn_member",
             degraded_flags=[],
+            silence_band="SILENT_KILL",
         )
         store.save_verdict("fam-1", "case-9", package, "DECISION", 0.01, now=1000.0)
         assert len(fake.puts) == 1
@@ -84,6 +85,9 @@ class TestCaseStore:
         assert item["pk"]["S"] == "HOUSEHOLD#fam-1"
         assert item["verdict"]["S"] == "SCAM"
         assert int(float(item["expires_at"]["N"])) == 1000 + 90 * 86400
+        # The weekly silence ledger reads this off the case row; if it stops
+        # being written the report counts every live case as unbanded.
+        assert item["silence_band"]["S"] == "SILENT_KILL"
 
     def test_duplicate_verdict_rejected(self, settings: Settings) -> None:
         store = CaseStore(FakeDynamo(), "t", settings)

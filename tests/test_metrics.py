@@ -99,3 +99,67 @@ class TestReport:
         expected = [s for s in STRATA_ORDER if s in set(names)]
         assert names == expected  # canonical doc order, byte-stable reports
         assert sum(s.n for s in report.per_stratum) == report.cases
+
+
+class TestFalseSilence:
+    """Doc 19 section 3: the silenced-benign rate rides beside the false-gate rate."""
+
+    def _cases(self) -> list[EvalCase]:
+        return [
+            EvalCase(
+                id=f"c{i}",
+                stratum=STRATA_ORDER[0],
+                lang="en",
+                difficulty="easy",
+                ground_truth=truth,
+                text="t",
+            )
+            for i, truth in enumerate(["benign", "benign", "scam"])
+        ]
+
+    def test_unmeasured_is_none_not_zero(self) -> None:
+        """A run without bands must not claim a clean sheet it never checked."""
+        cases = self._cases()
+        report = build_report(cases, [False, False, True], list(STRATA_ORDER))
+        assert report.false_silence_rate is None
+        assert report.silenced_benign == 0
+
+    def test_clean_run_measures_zero(self) -> None:
+        cases = self._cases()
+        report = build_report(
+            cases,
+            [False, False, True],
+            list(STRATA_ORDER),
+            silence_bands=["PASS", "PASS", "SILENT_KILL"],
+        )
+        assert report.false_silence_rate == 0.0
+        assert report.silenced_benign == 0
+
+    def test_silenced_benign_case_is_counted(self) -> None:
+        """One of two benign cases silenced is a 50 percent false-silence rate."""
+        cases = self._cases()
+        report = build_report(
+            cases,
+            [True, False, True],
+            list(STRATA_ORDER),
+            silence_bands=["SILENT_KILL", "PASS", "SILENT_KILL"],
+        )
+        assert report.silenced_benign == 1
+        assert report.false_silence_rate == 0.5
+
+    def test_benign_escalated_but_not_silenced_is_a_gate_not_a_silence(self) -> None:
+        """A false gate that still reached a human is not a false silence."""
+        cases = self._cases()
+        report = build_report(
+            cases,
+            [True, False, True],
+            list(STRATA_ORDER),
+            silence_bands=["AGENT_SCREEN", "PASS", "SILENT_KILL"],
+        )
+        assert report.false_gate_rate == 0.5
+        assert report.false_silence_rate == 0.0
+
+    def test_band_length_mismatch_is_refused(self) -> None:
+        cases = self._cases()
+        with pytest.raises(ValueError, match="bands="):
+            build_report(cases, [False, False, True], list(STRATA_ORDER), silence_bands=["PASS"])

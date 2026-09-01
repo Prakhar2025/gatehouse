@@ -62,5 +62,15 @@ class Report(BaseModel):
     recall: float
     recall_ci: tuple[float, float]
     false_gate_rate: float
+    # Doc 19 section 3: false silence rides beside false gates because it is
+    # the more expensive error. A benign signal that was SILENCED never
+    # reached a human at all, and trust dies faster from one silenced
+    # hospital than from a hundred missed scams.
+    #
+    # None means this run did not measure it (no bands supplied), which is a
+    # different claim from a measured zero. A rate nobody can audit is a rate
+    # nobody should trust, so the two never share a value.
+    false_silence_rate: float | None = None
+    silenced_benign: int = 0
     noise_leak_rate: float
     per_stratum: list[StratumMetrics]

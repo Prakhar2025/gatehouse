@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 
+from gatehouse.constants import BAND_SILENT_KILL, SilenceBand
 from gatehouse.evaluation.schemas import EvalCase, Report, StratumMetrics
 
 _Z95 = 1.959963984540054  # two-sided 95 percent
@@ -31,6 +32,7 @@ def build_report(
     cases: list[EvalCase],
     predicted_scam: list[bool],
     strata_order: list[str],
+    silence_bands: list[SilenceBand] | None = None,
 ) -> Report:
     """Aggregate confusion tables overall and per stratum.
 
@@ -38,12 +40,17 @@ def build_report(
         cases: labeled cases.
         predicted_scam: parallel list; True means classifier said scam.
         strata_order: stable ordering so reports stay byte-identical across runs.
+        silence_bands: parallel list of the silence band each case landed in.
+            Omit it and false_silence_rate reports None (not measured) rather
+            than zero (measured clean).
 
     Raises:
-        ValueError: length mismatch between cases and predictions.
+        ValueError: length mismatch between cases and predictions or bands.
     """
     if len(cases) != len(predicted_scam):
         raise ValueError(f"cases={len(cases)} but predictions={len(predicted_scam)}")
+    if silence_bands is not None and len(silence_bands) != len(cases):
+        raise ValueError(f"cases={len(cases)} but bands={len(silence_bands)}")
 
     tp = fp = tn = fn = 0
     per_stratum: dict[str, StratumMetrics] = {}
@@ -79,6 +86,16 @@ def build_report(
     recall_lo, recall_hi = wilson_interval(tp, tp + fn)
 
     benign_total = fp + tn
+
+    # A benign case that landed in SILENT_KILL was suppressed from every human
+    # in the loop. It is a strict subset of the false gates and the worst one.
+    silenced_benign = 0
+    false_silence_rate: float | None = None
+    if silence_bands is not None:
+        for case, band in zip(cases, silence_bands, strict=True):
+            if case.ground_truth != "scam" and band == BAND_SILENT_KILL:
+                silenced_benign += 1
+        false_silence_rate = round(silenced_benign / benign_total, 4) if benign_total else 0.0
     # NOISE-leak assertions require the P2 pipeline; the rule runner cannot leak
     # notifications by construction because it never notifies.
     noise_leak_rate = 0.0
@@ -94,6 +111,8 @@ def build_report(
         recall=round(tp / (tp + fn), 4) if (tp + fn) else 0.0,
         recall_ci=(round(recall_lo, 4), round(recall_hi, 4)),
         false_gate_rate=round(fp / benign_total, 4) if benign_total else 0.0,
+        false_silence_rate=false_silence_rate,
+        silenced_benign=silenced_benign,
         noise_leak_rate=noise_leak_rate,
         per_stratum=[per_stratum[s] for s in strata_order if s in per_stratum],
     )

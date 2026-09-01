@@ -48,6 +48,7 @@ from gatehouse.channels.notify import (
 )
 from gatehouse.channels.telegram import build_reply_verdict
 from gatehouse.config import Settings, get_settings
+from gatehouse.constants import BAND_SILENT_KILL
 from gatehouse.fencing import contains_canary
 from gatehouse.graph.store import GraphStore
 from gatehouse.logging_utils import get_logger, scrub_p1
@@ -487,6 +488,24 @@ def _escalate(
     """Send the guardian card when the package demands action. Best effort."""
     if result.package is None or result.recommended_action == "none":
         return None
+    # Graduated silence law (doc 19 section 3): a settled, high-confidence
+    # scam is exactly the case a guardian should never be paged for. The
+    # member who forwarded it still gets their answer; the case is logged and
+    # lands in the weekly silence report instead of on someone's lock screen
+    # at 3am. A panic press is the member explicitly asking for a human, so
+    # it overrides the band every time.
+    if result.package.silence_band == BAND_SILENT_KILL and not panic:
+        log.info(
+            "escalation_silenced",
+            extra={
+                "extra_fields": {
+                    "case_id": case_id,
+                    "verdict": result.verdict,
+                    "silence_band": result.package.silence_band,
+                }
+            },
+        )
+        return "silenced"
     urgency = _VERDICT_TO_URGENCY.get(result.verdict)
     if urgency is None:
         return None
