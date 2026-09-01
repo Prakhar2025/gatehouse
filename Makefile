@@ -1,9 +1,10 @@
-.PHONY: help setup check format lint type test test-cov pack-validate eval-mini eval-mini-json eval-full-json eval-calibrate-json clean
+.PHONY: help setup check console-check format lint type test test-cov pack-validate eval-mini eval-mini-json eval-full-json eval-calibrate-json clean
 
 help:
 	@echo "Gatehouse P1 targets"
 	@echo "  setup         create venv + install pinned deps"
 	@echo "  check         format-check + lint + type + fast tests (CI gate)"
+	@echo "  console-check console typecheck + lint + parity checks (CI gate)"
 	@echo "  format        apply ruff formatting and import sorting"
 	@echo "  lint          ruff check"
 	@echo "  type          mypy strict"
@@ -41,6 +42,14 @@ test-cov:
 	$(PY) -m pytest --cov=src/gatehouse --cov-report=term-missing --cov-fail-under=85
 
 check: lint type test
+
+# Local parity with the console CI job. Warnings fail: the review filter
+# shipped dead behind one.
+console-check:
+	cd console && npm run typecheck
+	cd console && npm run lint -- --max-warnings=0
+	cd console && npm run check:i18n
+	cd console && npm run check:overrides
 
 pack-validate:
 	$(PY) scripts/validate_packs.py

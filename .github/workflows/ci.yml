@@ -50,3 +50,38 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The console carried typecheck, lint, and parity scripts that nothing ran.
+  # A dead feature shipped behind an eslint warning because of it.
+  console:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: console
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+
+      - name: Install locked deps
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint (warnings are failures)
+        run: npm run lint -- --max-warnings=0
+
+      - name: Locale parity
+        run: npm run check:i18n
+
+      - name: Override reduction
+        run: npm run check:overrides
+
+      - name: Build
+        run: npm run build
