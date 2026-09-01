@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from gatehouse.agents.guardian import compose_package
+from gatehouse.agents.investigator import run_investigation
 from gatehouse.agents.schemas import (
     GraphFinding,
     GuardianPackage,
@@ -162,6 +163,30 @@ async def investigate(
         log.warning("graph_stage_failed", extra={"extra_fields": {"error": type(exc).__name__}})
         graph = finding_unavailable(f"graph_error:{type(exc).__name__}")
 
+    # 4b) tool-driven investigation (doc 04 section 4, flag-gated).
+    # The deterministic sweep above already ran and its findings are held, so
+    # this stage can only replace a complete evidence set with another
+    # complete one; a failing agent loop never leaves the gate emptier than
+    # it found it. Runs after the graph so the correlation tool has something
+    # real to report. Breaker-gated: an agent loop is several model calls and
+    # must answer to the same spend cap as every other leg.
+    investigation_flags: list[str] = []
+    if s.investigator_agent_enabled and model is not None and verify_out is not None:
+        if not meter.allow():
+            investigation_flags = ["INVESTIGATOR_BUDGET_REFUSED"]
+        else:
+            try:
+                with _stage(trace, "investigate"):
+                    investigation = await run_investigation(raw_text, pack, graph, model)
+                findings = list(investigation.findings)
+                investigation_flags = list(investigation.degraded_flags)
+            except Exception as exc:
+                log.warning(
+                    "investigate_stage_failed",
+                    extra={"extra_fields": {"error": type(exc).__name__}},
+                )
+                investigation_flags = [f"INVESTIGATOR_STAGE_FAILED:{type(exc).__name__}"]
+
     # 5) guardian composition (pure policy over whatever survived upstream)
     package: GuardianPackage | None = None
     try:
@@ -183,6 +208,13 @@ async def investigate(
             top_evidence=package.top_evidence,
             recommended_action="review_bundle",
             degraded_flags=[*package.degraded_flags, "VERIFY_UNAVAILABLE"],
+        )
+
+    if investigation_flags:
+        # A degraded investigation must reach the bundle like every other
+        # degradation; principle 5 admits no quiet ones.
+        package = package.model_copy(
+            update={"degraded_flags": [*package.degraded_flags, *investigation_flags]}
         )
 
     if trace is not None:

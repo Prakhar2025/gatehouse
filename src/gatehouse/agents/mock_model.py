@@ -36,12 +36,24 @@ class MockModel(Model):
         text: assistant text when no tool call is requested.
         tool_payload: JSON-serializable payload emitted as a toolUse block when
             the agent loop forces a structured-output tool.
+        script: optional sequence of turns for driving a real multi-turn tool
+            loop offline. Each entry is either {"tool": name, "input": {...}}
+            or {"text": "..."}; one entry is consumed per stream() call. Left
+            as None, the model behaves exactly as it always has, which is what
+            keeps every existing single-turn caller unaffected.
     """
 
-    def __init__(self, text: str = "ok", tool_payload: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        text: str = "ok",
+        tool_payload: dict[str, Any] | None = None,
+        script: list[dict[str, Any]] | None = None,
+    ) -> None:
         self._text = text
         self._payload: dict[str, Any] = tool_payload if tool_payload is not None else {}
         self._config: dict[str, Any] = {}
+        self._script = list(script) if script is not None else None
+        self._turn = 0
 
     # -- Model contract -----------------------------------------------------
     def update_config(self, **model_config: Any) -> None:
@@ -78,6 +90,10 @@ class MockModel(Model):
     async def _chunks(
         self, tool_specs: list[dict[str, Any]] | None
     ) -> AsyncIterator[dict[str, Any]]:
+        if self._script is not None:
+            async for chunk in self._scripted():
+                yield chunk
+            return
         yield {"messageStart": {"role": "assistant"}}
         if tool_specs:
             name = str(tool_specs[0]["name"])
@@ -98,6 +114,53 @@ class MockModel(Model):
             yield {"contentBlockDelta": {"delta": {"text": self._text}, "contentBlockIndex": 0}}
             yield {"contentBlockStop": {"contentBlockIndex": 0}}
         yield {"messageStop": {"stopReason": "tool_use" if tool_specs else "end_turn"}}
+        yield {
+            "metadata": {
+                "usage": {"inputTokens": 5, "outputTokens": 7, "totalTokens": 12},
+                "metrics": {"latencyMs": 1},
+            }
+        }
+
+    async def _scripted(self) -> AsyncIterator[dict[str, Any]]:
+        """Emit one scripted turn per call, then fall through to plain text.
+
+        Running past the end of the script ends the turn instead of raising:
+        an agent loop that iterates more than the script anticipated should
+        finish, not explode, so the test failure lands on the assertion that
+        matters rather than on a StopIteration.
+        """
+        assert self._script is not None
+        turn: dict[str, Any] = (
+            self._script[self._turn] if self._turn < len(self._script) else {"text": self._text}
+        )
+        self._turn += 1
+
+        yield {"messageStart": {"role": "assistant"}}
+        name = turn.get("tool")
+        if name:
+            yield {
+                "contentBlockStart": {
+                    "start": {"toolUse": {"toolUseId": f"mock-{self._turn}", "name": str(name)}},
+                    "contentBlockIndex": 0,
+                }
+            }
+            yield {
+                "contentBlockDelta": {
+                    "delta": {"toolUse": {"input": json.dumps(turn.get("input", {}))}},
+                    "contentBlockIndex": 0,
+                }
+            }
+            yield {"contentBlockStop": {"contentBlockIndex": 0}}
+            yield {"messageStop": {"stopReason": "tool_use"}}
+        else:
+            yield {
+                "contentBlockDelta": {
+                    "delta": {"text": str(turn.get("text", self._text))},
+                    "contentBlockIndex": 0,
+                }
+            }
+            yield {"contentBlockStop": {"contentBlockIndex": 0}}
+            yield {"messageStop": {"stopReason": "end_turn"}}
         yield {
             "metadata": {
                 "usage": {"inputTokens": 5, "outputTokens": 7, "totalTokens": 12},

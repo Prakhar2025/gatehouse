@@ -77,6 +77,14 @@ class Settings(BaseSettings):
     # --- engage agent (doc 04 section 6; opt-in per household) ---
     engagement_default_opt_in: bool = True
 
+    # --- investigator agent (doc 04 section 4; strands tool loop) ---
+    # Default off. The published false-gate numbers were measured on the
+    # deterministic sweep, and a shipped default the metrics never covered
+    # would make those numbers describe a system nobody is running. Turning
+    # this on is a measurement decision, not a preference: it needs a capped
+    # eval run behind it before it becomes the default path.
+    investigator_agent_enabled: bool = False
+
     # --- live deployment wiring (doc 09 section 2) ---
     cases_table_name: str = "gatehouse-cases-staging"
     graph_table_name: str = "gatehouse-graph-staging"
