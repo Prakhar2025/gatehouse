@@ -220,23 +220,24 @@ class TestDegradedPaths:
         assert result.outcome == OUTCOME_BENIGN_EXIT
         assert result.intent_confidence == 0.1
 
+
 class _NullChannel:
     """Channel double: never touched when consent is refused up front."""
 
-    def deliver(self, contact, text):
+    def deliver(self, contact: str, text: str) -> bool:
         return True
 
-    def receive(self, contact):
+    def receive(self, contact: str) -> str | None:
         return None
 
 
-def test_member_consent_refused_before_any_model_call():
+def test_member_consent_refused_before_any_model_call() -> None:
     """Per-member consent (doc 19): even with the household opted in, a case
     forwarded by a member who has not consented to engagement must refuse
     before the model is touched."""
 
     class _NoCallModel:
-        async def structured_output(self, *a, **k):  # pragma: no cover
+        async def structured_output(self, *a: Any, **k: Any) -> None:  # pragma: no cover
             raise AssertionError("model must not be called without member consent")
 
     result = _run(

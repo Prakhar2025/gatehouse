@@ -7,6 +7,7 @@ node_modules/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.pytest-tmp/
 .aws-sam/
 *.db
 .DS_Store

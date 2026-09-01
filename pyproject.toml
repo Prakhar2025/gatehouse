@@ -29,6 +29,9 @@ packages = ["src/gatehouse"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+# Non-source trees. .pytest-tmp is a scratch dir the OS can lock, which
+# aborts a repo-wide format check before it reaches any real file.
+extend-exclude = [".pytest-tmp", "build", "console", "packs"]
 
 [tool.ruff.lint]
 select = [
