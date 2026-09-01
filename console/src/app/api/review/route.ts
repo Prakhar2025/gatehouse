@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { countOverrides, putOverride } from "@/lib/aws";
+import { putOverride, readOverrides } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return NextResponse.json(await countOverrides());
+    return NextResponse.json(await readOverrides());
   } catch (err) {
     console.error("override count failed", err);
     return NextResponse.json({ error: "OVERRIDE_READ_FAILED" }, { status: 502 });

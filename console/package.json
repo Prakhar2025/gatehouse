@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:i18n": "tsx scripts/check-i18n.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:overrides": "tsx scripts/check-overrides.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1121.0",

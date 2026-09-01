@@ -22,7 +22,7 @@ interface LiveCase {
 
 export default function ReviewPage() {
   const queryClient = useQueryClient();
-  const [filter] = useState<"all" | "wrong">("all");
+  const [filter, setFilter] = useState<"all" | "wrong">("all");
   const cases = useQuery({
     queryKey: ["live-cases"],
     queryFn: async (): Promise<LiveCase[]> => {
@@ -33,7 +33,11 @@ export default function ReviewPage() {
   });
   const counts = useQuery({
     queryKey: ["overrides"],
-    queryFn: async (): Promise<{ total: number; disagreed: number }> => {
+    queryFn: async (): Promise<{
+      total: number;
+      disagreed: number;
+      labels: Record<string, boolean>;
+    }> => {
       const r = await fetch("/api/review");
       if (!r.ok) throw new Error("OVERRIDE_READ_FAILED");
       return r.json();
@@ -52,10 +56,14 @@ export default function ReviewPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["overrides"] });
     },
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: ["overrides"] });
+    },
   });
 
   const list = cases.data ?? [];
-  const shown = filter === "wrong" ? list.filter((c) => false) : list;
+  const labels = counts.data?.labels ?? {};
+  const shown = filter === "wrong" ? list.filter((c) => labels[c.case_id] === false) : list;
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4 md:p-6">
@@ -75,6 +83,24 @@ export default function ReviewPage() {
             flagged wrong <span className="text-wary-fg">{counts.data?.disagreed ?? 0}</span>
           </span>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {(["all", "wrong"] as const).map((f) => (
+          <button
+            key={f}
+            type="button"
+            aria-pressed={filter === f}
+            className={`rounded border px-2 py-1 font-mono text-[11px] ${
+              filter === f
+                ? "border-accent bg-accent text-bg"
+                : "border-line text-fg-muted hover:text-fg"
+            }`}
+            onClick={() => setFilter(f)}
+          >
+            {f === "all" ? "all cases" : "flagged wrong"}
+          </button>
+        ))}
       </div>
 
       {cases.isLoading ? (
@@ -98,10 +124,26 @@ export default function ReviewPage() {
           }
         />
       ) : shown.length === 0 ? (
-        <EmptyState
-          title="No live cases yet"
-          body="Forward messages from the household bot; they appear here seconds after the verdict."
-        />
+        filter === "wrong" ? (
+          <EmptyState
+            title="Nothing flagged wrong"
+            body="No case in this window carries a disagreement. Tap 'Verdict wrong' on one to record the first."
+            action={
+              <button
+                type="button"
+                className="rounded border border-line px-3 py-1.5 text-sm hover:bg-card-muted"
+                onClick={() => setFilter("all")}
+              >
+                Show all cases
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="No live cases yet"
+            body="Forward messages from the household bot; they appear here seconds after the verdict."
+          />
+        )
       ) : (
         <ul className="space-y-3">
           {shown.map((c) => (
@@ -112,6 +154,17 @@ export default function ReviewPage() {
                 {c.confidence != null ? (
                   <span className="tabular-nums">{Math.round(c.confidence * 100)}%</span>
                 ) : null}
+                {labels[c.case_id] != null ? (
+                  <span
+                    className={`rounded border px-1.5 py-0.5 ${
+                      labels[c.case_id]
+                        ? "border-safe-line bg-safe-bg text-safe-fg"
+                        : "border-scam-line bg-scam-bg text-scam-fg"
+                    }`}
+                  >
+                    {labels[c.case_id] ? "marked correct" : "marked wrong"}
+                  </span>
+                ) : null}
                 <span className="ml-auto">{c.member_name}</span>
                 <span>{new Date(c.received_at).toLocaleString()}</span>
               </div>
@@ -121,7 +174,8 @@ export default function ReviewPage() {
               <div className="flex items-center justify-end gap-2 px-4 pb-3">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded border border-safe-line bg-safe-bg px-3 py-1.5 text-xs font-medium text-safe-fg hover:opacity-80"
+                  className="inline-flex items-center gap-1.5 rounded border border-safe-line bg-safe-bg px-3 py-1.5 text-xs font-medium text-safe-fg hover:opacity-80 aria-pressed:ring-1 aria-pressed:ring-safe-fg"
+                  aria-pressed={labels[c.case_id] === true}
                   disabled={tap.isPending}
                   onClick={() => tap.mutate({ case_id: c.case_id, agree: true })}
                 >
@@ -129,7 +183,8 @@ export default function ReviewPage() {
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded border border-scam-line bg-scam-bg px-3 py-1.5 text-xs font-medium text-scam-fg hover:opacity-80"
+                  className="inline-flex items-center gap-1.5 rounded border border-scam-line bg-scam-bg px-3 py-1.5 text-xs font-medium text-scam-fg hover:opacity-80 aria-pressed:ring-1 aria-pressed:ring-scam-fg"
+                  aria-pressed={labels[c.case_id] === false}
                   disabled={tap.isPending}
                   onClick={() => tap.mutate({ case_id: c.case_id, agree: false })}
                 >

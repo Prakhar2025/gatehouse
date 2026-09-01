@@ -8,6 +8,7 @@ import { DynamoDBDocumentClient, ScanCommand, PutCommand } from "@aws-sdk/lib-dy
  */
 const region = process.env.GATEHOUSE_REGION ?? "ap-south-1";
 const casesTable = process.env.GATEHOUSE_CASES_TABLE_NAME ?? "gatehouse-cases-staging";
+const householdId = process.env.GATEHOUSE_HOUSEHOLD_ID ?? "shukla-home";
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({ region }), {
   marshallOptions: { removeUndefinedValues: true },
@@ -77,7 +78,7 @@ export async function putOverride(row: OverrideRow): Promise<void> {
     new PutCommand({
       TableName: casesTable,
       Item: {
-        pk: `HOUSEHOLD#${"shukla-home"}`,
+        pk: `HOUSEHOLD#${householdId}`,
         sk: `OVERRIDE#${Date.now()}#${row.case_id}`,
         case_id: row.case_id,
         agree: row.agree,
@@ -89,7 +90,50 @@ export async function putOverride(row: OverrideRow): Promise<void> {
   );
 }
 
-export async function countOverrides(): Promise<{ total: number; disagreed: number }> {
+export interface OverrideSummary {
+  /** Distinct cases carrying a label, not rows written. */
+  total: number;
+  /** Distinct cases whose most recent label disagrees with the verdict. */
+  disagreed: number;
+  /** case_id -> most recent agreement tap, so the feed can show its own state. */
+  labels: Record<string, boolean>;
+}
+
+/**
+ * Reduce raw override rows to the latest label per case. Rows stay
+ * append-only because the audit chain must keep every tap, but a case
+ * labelled twice has to count once: a denominator that grows on re-taps
+ * reports a disagreement rate that was never measured. Pure and exported so
+ * the reduction is verifiable without a table (scripts/check-overrides.ts).
+ */
+export function reduceOverrides(items: Array<Record<string, unknown>>): OverrideSummary {
+  // sk is OVERRIDE#<ms>#<case_id>; the millisecond stamp orders taps that
+  // share a created_at second, which a scan returns in no useful order.
+  const stampOf = (row: Record<string, unknown>): number => {
+    const fromSk = Number(String(row.sk ?? "").split("#")[1]);
+    return Number.isFinite(fromSk) ? fromSk : Number(row.created_at ?? 0) * 1000;
+  };
+
+  const latest = new Map<string, { at: number; agree: boolean }>();
+  for (const row of items) {
+    const caseId = String(row.case_id ?? "");
+    if (!caseId) continue;
+    const at = stampOf(row);
+    const seen = latest.get(caseId);
+    if (!seen || at > seen.at) latest.set(caseId, { at, agree: row.agree === true });
+  }
+
+  const labels: Record<string, boolean> = {};
+  let disagreed = 0;
+  for (const [caseId, row] of latest) {
+    labels[caseId] = row.agree;
+    if (!row.agree) disagreed += 1;
+  }
+  return { total: latest.size, disagreed, labels };
+}
+
+/** Latest guardian label per case, read from the live table. */
+export async function readOverrides(): Promise<OverrideSummary> {
   const scan = await doc.send(
     new ScanCommand({
       TableName: casesTable,
@@ -97,11 +141,7 @@ export async function countOverrides(): Promise<{ total: number; disagreed: numb
       ExpressionAttributeValues: { ":ovr": "OVERRIDE#" },
     }),
   );
-  const items = (scan.Items ?? []) as Array<Record<string, unknown>>;
-  return {
-    total: items.length,
-    disagreed: items.filter((i) => i.agree === false).length,
-  };
+  return reduceOverrides((scan.Items ?? []) as Array<Record<string, unknown>>);
 }
 
 export { casesTable, region };
