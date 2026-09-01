@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.0.0 |
+| Version | 1.1.0 |
 | Status | Owner-directed addition from strategy session, Aug 24 2026 |
 | Owner | Prakhar Shukla |
 | Depends on | 01, 03, 04, 05, 06, 08 |
-| Last updated | 2026-08-31 |
+| Last updated | 2026-09-01 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 1.1.0 | Section 3 implemented rather than described: every GuardianPackage carries a silence band computed from settings, the escalation path acts on it, the band persists on the case row, and false silence joins the metrics. Acceptance criterion 2 satisfied by configuration. One rule added beyond the original table: a degraded case is never silenced, because confidence computed over partial evidence has not earned quiet |
 | 1.0.0 | Initial locked version: the doctrine, eight-layer architecture, graduated silence law, lightweight-and-private engineering constitution, honest limits, golden hour recovery, product ladder |
 
 This document is the north star above all other docs. Docs 02-18 describe what

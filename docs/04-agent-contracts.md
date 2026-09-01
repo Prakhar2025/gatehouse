@@ -4,16 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.3.0 |
+| Version | 0.4.0 |
 | Status | Draft for owner review |
 | Owner | Prakhar Shukla |
 | Depends on | 03-architecture |
-| Last updated | 2026-08-27 |
+| Last updated | 2026-09-01 |
 
 ## Changelog
 
 | Version | Change |
 |---|---|
+| 0.4.0 | verify_agent section 4 gains the tool-driven investigator contract: four content-free tools over the deterministic checks, driven by a strands agent loop, flag-gated off pending a capped evaluation. guardian_agent section 7 gains the silence band on GuardianPackage. Eval impact: none while the flag is off, LOCAL_MOCK artifacts byte-identical; enabling it requires a fresh pre/post pair |
 | 0.3.0 | TriageResult contract gains band_source and rule_class so downstream policy can cap model-driven bands without ever capping deterministic rule evidence; eval impact: LOCAL_MOCK artifacts byte-identical, staged pre/post pair published under docs/eval-results/ |
 | 0.2.0 | Replaced ASCII orchestration sketch with Mermaid supervisor topology diagram |
 | 0.1.0 | Initial draft |
@@ -139,6 +140,33 @@ Deterministic checks (regex rail formats, numerical mismatch, negation polarity,
 temporal disjointness) run in-process before any model call; the model only
 adjudicates residual ambiguity. This keeps cost bounded and results reproducible.
 
+### 4.1 Tool-driven investigator (implemented, flag-gated)
+
+The deterministic checks above are exposed as a strands toolset and driven by
+a real agent loop. The agent chooses which checks are worth running on a
+signal; it never determines what they conclude.
+
+| Field | Spec |
+|---|---|
+| Tools | check_link_reputation, adjudicate_brand_claim, check_payment_handles, correlate_prior_events |
+| Tool input | none. Every tool is closed over the signal under investigation |
+| Tool output | evidence lines only, never a verdict |
+| Findings | produced solely by the deterministic verifier, collected through a sink the model cannot read |
+| Budget | breaker-gated like every other model leg; an agent loop is several calls |
+| Failure | falls back to the full deterministic sweep, discloses INVESTIGATOR_FALLBACK |
+| No-op loop | a loop that calls no tool is swept deterministically and flagged INVESTIGATOR_NO_TOOL_CALLS, because an empty evidence set reads downstream as checked and clean |
+| Flag | `investigator_agent_enabled`, default false |
+
+Two invariants carry the contract. Tools accept no content, so the model has
+no channel to launder untrusted text into the evidence layer (doc 08). Tools
+return no verdict, so the guardian composes exactly as it does on the
+deterministic path. A parity test asserts the full toolset reproduces
+verify_signal exactly: the agent changes who asks, never what the answer is.
+
+The flag defaults off because the published false-gate numbers were measured
+on the deterministic sweep. Enabling it is a measurement decision requiring a
+fresh pre/post pair, not a configuration preference.
+
 ## 5. graph_agent
 
 Purpose: memory of the network. Has anything about this signal been seen before,
@@ -198,6 +226,26 @@ sees. Explains like a senior analyst briefs a busy executive.
 
 Escalation card contract (notification copy): headline verdict, one-line why,
 top evidence pair, two buttons (primary action, open bundle). Under 280 chars.
+
+### 7.1 Silence band (implemented)
+
+Every GuardianPackage carries a `silence_band` from the graduated silence law
+(doc 19 section 3), computed deterministically from the verdict, its
+confidence, and the configured thresholds. The band governs whether the
+GUARDIAN is interrupted; the member who forwarded a signal always receives
+their reply.
+
+| Rule | Reason |
+|---|---|
+| NEEDS_HUMAN is never silenced | it is the pipeline explicitly asking for a person |
+| Only SCAM reaches SILENT_KILL | unsettled evidence is not handled in silence however high it scores |
+| SAFE is PASS | nothing was found, which is invisible processing, not a suppressed alarm |
+| Any degraded case stays visible | confidence computed over partial evidence has not earned quiet, and an operator who cannot see degradation cannot fix it |
+
+A SILENT_KILL case is persisted with its band on the case row and appears in
+the weekly silence ledger. A panic press overrides the band unconditionally.
+False silence (a benign case that was silenced) is reported beside the
+false-gate rate, and reports None when a run did not measure it.
 
 ## 8. Cross-Cutting Contracts
 
