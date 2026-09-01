@@ -183,3 +183,38 @@ Root cause: the cases table accumulates journey-harness runs, chaos fixtures, an
 Fix: the interim report is scoped to the soak window and excludes tagged fixtures; recorded guard for the next harness change: automated senders must write a dedicated marker household so exclusion is structural rather than editorial.
 Prevention: any report over shared production tables must state its exclusion rules in the artifact itself; a denominator nobody can audit is a number nobody should trust.
 Phase: evaluation layer
+
+## [2026-09-01] main shipped with the strict gate red on a test file
+Symptom: the repo verification suite disagreed with itself. pytest was fully green (415 passing, 92 percent coverage) while mypy strict reported four no-untyped-def errors and ruff format wanted to rewrite the same file, tests/agents/test_engage.py. The commit that added the per-member consent test landed on main with `make check` red.
+Root cause: the consent test and its two doubles (_NullChannel, _NoCallModel) were written without annotations in a file where every other double is fully typed, and with one blank line before a module-level class instead of two. Passing tests were mistaken for a passing gate; the charter requires type hints on every function, and pytest does not enforce that.
+Fix: the doubles and the test are annotated to the file's existing convention, and formatting is restored. All three python gates are green together.
+Prevention: green tests are not a green gate. The verification standard is the whole `make check` chain, and a phase does not exit on the strength of the one gate that happens to be cheapest to run.
+Phase: console and release
+
+## [2026-09-01] a repo-wide format check aborted before reaching any source file
+Symptom: `ruff format --check .` panicked with "Expected a ruff source file" and `ruff check .` printed an access-denied warning, both before examining a single tracked file. Scoping the same command to src, tests, and scripts worked and found a real formatting defect, which is how the defect above stayed hidden.
+Root cause: an untracked .pytest-tmp scratch directory the OS holds locked sat in the repo root, matched by neither .gitignore nor any ruff exclude. The lint target in the Makefile and in CI both invoke ruff over ".", so an unreadable directory anywhere in the tree could take the format gate down without failing loudly enough to be read as a failure.
+Fix: .pytest-tmp is ignored, and ruff carries explicit excludes for the non-source trees (.pytest-tmp, build, console, packs) so the repo-wide gate scans only what it is meant to scan.
+Prevention: a gate that cannot complete is a failed gate, never a passed one. Tooling crash output gets read with the same suspicion as a test failure.
+Phase: console and release
+
+## [2026-09-01] the live review "flagged wrong" filter could never return a case
+Symptom: the console review page offered a two-state filter whose "wrong" branch evaluated `list.filter((c) => false)`, so selecting it always produced an empty feed. No selector was rendered and the state had no setter, so the branch was unreachable in the shipped build. The only trace was a single eslint warning about an unused parameter.
+Root cause: the label engine was built write-only. Taps persisted override rows, but the read side returned aggregate counts alone, so the page had no per-case label to filter or display on. The filter was stubbed to a constant false pending that data and never revisited.
+Fix: the read side returns the latest label per case alongside the counts, the filter is a real control matching the audit page pattern, each case shows its standing label, and the empty state distinguishes an unlabelled gate from a filtered-empty view.
+Prevention: an unused-parameter warning on a predicate is a dead-branch report. Console warnings now fail CI rather than accumulating as background noise.
+Phase: console and release
+
+## [2026-09-01] the guardian labelling counters inflated on every re-tap
+Symptom: the review header reported "labelled N" and "flagged wrong M" straight from a row count over OVERRIDE# items. Override rows are append-only with a millisecond-stamped sort key, so a guardian correcting one case three times was counted as three labels, and a disagreement later revised to an agreement stayed permanently in the disagreed total.
+Root cause: rows written were treated as cases labelled. The two are only equal if nobody ever changes their mind, which is precisely what a review loop exists to let them do. Under principle 4 this is a measurement lie: the number feeding the weekly taxonomy was not the quantity it claimed to name.
+Fix: reads reduce to the latest label per case, ordered on the sort key millisecond stamp because a scan returns no useful order and created_at only has second resolution. The rows stay append-only so the audit chain keeps every tap. The reduction is a pure exported function covered by eight checks wired into CI, including the re-tap and out-of-order cases, and the checks were confirmed to fail against the old row-counting behaviour before being accepted.
+Prevention: any counter over an append-only table states whether it counts rows or entities, and the distinction gets a test that fails when the two are conflated.
+Phase: console and release
+
+## [2026-09-01] no CI job ever ran the console checks
+Symptom: the console carried a typecheck script, a lint script, and a locale parity script whose own header comment said it was waiting for JS CI to exist. No workflow referenced any of them. The dead review filter reached main through exactly this hole.
+Root cause: CI was built around the python package and the console was added later without extending it. Half the shipped product had no automated gate at all, so console defects were caught only when someone ran the scripts by hand.
+Fix: ci.yml gains a console job on Node 20 running typecheck, lint with warnings promoted to failures, locale parity, the override reduction checks, and a production build. A console-check make target gives the same chain locally.
+Prevention: every deployable surface in the repo has a CI job before it ships, and a check script that nothing invokes is treated as an outage in the gate, not as coverage.
+Phase: console and release
