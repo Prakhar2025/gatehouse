@@ -404,3 +404,48 @@ class TestTracesReconstructCase:
         assert by_stage["graph"].status == "failed"
         assert by_stage["graph"].error == "_Boom"
         assert by_stage["guardian"].status == "ok"
+
+
+# Carries a UTR so the graph stage actually queries the store: without an
+# identifier the stage short-circuits to the empty finding and a dead store is
+# never reached. The extra evidence also lifts confidence past the floor.
+_SETTLED_SCAM = "SBI KYC expired, pay now at http://sbi-verify.top UTR123456789012"
+
+
+class TestRow9SilenceUnderDegradation:
+    """Doc 19 section 3 meets charter principle 5: a degraded case is visible.
+
+    Silence is earned. When a dependency did not answer, the confidence on
+    the verdict was computed over partial evidence, so handling it silently
+    would hide the case and the outage together.
+    """
+
+    def test_lost_verification_is_never_silenced(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _verify_boom(monkeypatch)
+        result = _investigate(
+            "SBI KYC expired, pay now at http://sbi-verify.top",
+            model=MockModel(tool_payload={"scam_likelihood": 0.99, "reason_code": "KYC"}),
+        )
+        assert result.package is not None
+        assert result.package.silence_band != "SILENT_KILL"
+
+    def test_graph_outage_keeps_a_settled_scam_visible(self) -> None:
+        """Hard evidence still convicts, but the outage must reach a human."""
+        result = _investigate(
+            _SETTLED_SCAM,
+            store=_DeadStore(),
+            model=MockModel(tool_payload={"scam_likelihood": 0.99, "reason_code": "KYC"}),
+        )
+        assert "GRAPH_UNAVAILABLE" in result.degraded_flags
+        assert result.package is not None
+        assert result.package.silence_band != "SILENT_KILL"
+
+    def test_clean_settled_scam_still_earns_silence(self) -> None:
+        """The guard must not silence everything: a clean case still goes quiet."""
+        result = _investigate(
+            _SETTLED_SCAM,
+            model=MockModel(tool_payload={"scam_likelihood": 0.99, "reason_code": "KYC"}),
+        )
+        assert result.degraded_flags == []
+        assert result.package is not None
+        assert result.package.silence_band == "SILENT_KILL"

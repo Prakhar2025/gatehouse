@@ -37,11 +37,22 @@ def _round(v: float) -> float:
     return round(v, 4)
 
 
-def compute_silence_band(verdict: Verdict, confidence: float, settings: Settings) -> SilenceBand:
+def compute_silence_band(
+    verdict: Verdict,
+    confidence: float,
+    settings: Settings,
+    degraded: bool = False,
+) -> SilenceBand:
     """Map a composed verdict onto the graduated silence law (doc 19 section 3).
 
     Silence is earned, never assumed, so the ladder is deliberately
-    conservative in three places:
+    conservative in four places:
+
+    - A degraded case is never silenced. Some dependency did not answer, so
+      the confidence attached to this verdict was computed on partial
+      evidence. Handling that in silence would hide both the case and the
+      outage, and an operator who cannot see degradation cannot fix it
+      (charter principle 5).
 
     - NEEDS_HUMAN is the pipeline explicitly asking for a person. It can never
       be silenced, whatever the confidence attached to it.
@@ -59,7 +70,7 @@ def compute_silence_band(verdict: Verdict, confidence: float, settings: Settings
         return BAND_BADGED_RING
     if verdict == "SAFE":
         return BAND_PASS
-    if verdict == "SCAM" and confidence >= settings.silent_kill_floor:
+    if verdict == "SCAM" and confidence >= settings.silent_kill_floor and not degraded:
         return BAND_SILENT_KILL
     if confidence >= settings.gray_band_high:
         return BAND_AGENT_SCREEN
@@ -225,5 +236,7 @@ def compose_package(
         top_evidence=evidence[:3],
         recommended_action=action,
         degraded_flags=degraded,
-        silence_band=compute_silence_band(verdict, final_confidence, settings),
+        silence_band=compute_silence_band(
+            verdict, final_confidence, settings, degraded=bool(degraded)
+        ),
     )
