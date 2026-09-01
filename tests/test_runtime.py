@@ -191,9 +191,24 @@ class TestSilenceLaw:
         assert outcome.escalated == "sent"
 
     def test_unsettled_case_still_reaches_the_guardian(self, rt: Any) -> None:
-        """Only settled scams go silent; a gray case must still be escalated."""
+        """Only settled scams go silent; a gray case must still be escalated.
+
+        Pinned to a daytime moment: this asserts the band did not silence the
+        card, and reading the host clock instead would fail every evening
+        when quiet hours legitimately queue it into the digest.
+        """
         rt.model = MockModel(tool_payload={"scam_likelihood": 0.60, "reason_code": "URL_RISK"})
-        outcome: PipelineOutcome = go(handle_telegram_signal(tg_signal(GRAY_TEXT)))
+        outcome: PipelineOutcome = go(
+            run_pipeline(
+                rt,
+                channel="telegram",
+                household_id=HH1,
+                sender_name="R",
+                text=GRAY_TEXT,
+                is_forward=True,
+                now=day_epoch(),
+            )
+        )
         assert outcome.verdict == "SUSPICIOUS"
         assert outcome.escalated == "sent"
 
