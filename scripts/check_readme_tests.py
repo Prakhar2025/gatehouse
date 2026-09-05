@@ -2,6 +2,7 @@
 repository cannot back (what-broke 2026-09-01). Fails when the number in
 README.md drifts from the collected suite size.
 """
+
 import re
 import subprocess
 import sys
