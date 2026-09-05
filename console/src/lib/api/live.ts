@@ -5,7 +5,7 @@
  * exist; everything verdict-path is live.
  */
 import type { GatehouseApi } from "./client";
-import { MOCK_AUDIT, MOCK_HOUSEHOLD, MOCK_METRICS } from "./mock-data";
+import { MOCK_HOUSEHOLD, MOCK_METRICS } from "./mock-data";
 import type {
   AuditEntry,
   CasePage,
@@ -73,10 +73,26 @@ export const liveApi: GatehouseApi = {
     return { case_id: caseId, state: "CLOSED_ACTIONED", graph_commit: "queued" };
   },
   async getHousehold(): Promise<Household> {
-    return structuredClone(MOCK_HOUSEHOLD);
+    // No member registry exists yet: members are bound over Telegram and are
+    // not persisted anywhere the console can read. Returning the seeded
+    // household here would put invented people on a public page, so the
+    // screen gets an empty roster and says so. Settings are the real
+    // deployed defaults, which is why those are kept.
+    return { ...structuredClone(MOCK_HOUSEHOLD), members: [], invites: [], consent_ledger: [] };
   },
   async getAudit(): Promise<AuditEntry[]> {
-    return MOCK_AUDIT;
+    // The override ledger is the only genuine audit record that exists today.
+    const r = await j<{ entries: Array<{ id: string; at: string; actor: string; action: string; case_id: string; note: string }> }>("/audit");
+    return r.entries.map((e, i) => ({
+      seq: r.entries.length - i,
+      at: e.at,
+      actor: e.actor,
+      event_type: e.action,
+      case_id: e.case_id || null,
+      summary: e.note || e.action.replace(/_/g, " "),
+      hash: e.id,
+      prev_hash: null,
+    }));
   },
   async getMetrics(): Promise<MetricsSnapshot> {
     const r = await j<{ metrics: MetricsSnapshot }>("/metrics");

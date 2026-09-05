@@ -97,7 +97,7 @@ export default function DashboardPage() {
             <Stat
               label={copyFor(locale, "metric_latency")}
               value={`${(m.latency_p50_ms / 1000).toFixed(1)}s`}
-              sub={`p95 ${(m.latency_p95_ms / 1000).toFixed(1)}s`}
+              sub={`p95 ${(m.latency_p95_ms / 1000).toFixed(1)}s, benchmark`}
             />
             <Stat
               label={copyFor(locale, "metric_spend")}
@@ -107,12 +107,12 @@ export default function DashboardPage() {
             <Stat
               label={copyFor(locale, "metric_precision")}
               value={m.precision.toFixed(2)}
-              sub={`CI ${m.precision_ci[0].toFixed(3)} to ${m.precision_ci[1].toFixed(3)}`}
+              sub={`480-case dev split, CI ${m.precision_ci[0].toFixed(3)} to ${m.precision_ci[1].toFixed(3)}`}
             />
             <Stat
               label={copyFor(locale, "metric_false_gate")}
               value={`${(m.false_gate_rate * 100).toFixed(1)}%`}
-              sub={`CI ${m.false_gate_ci[0].toFixed(3)} to ${m.false_gate_ci[1].toFixed(3)}`}
+              sub={`480-case dev split, CI ${m.false_gate_ci[0].toFixed(3)} to ${m.false_gate_ci[1].toFixed(3)}`}
             />
           </div>
         ) : (
@@ -122,6 +122,13 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+        {/* Which numbers are measured here and which are not: accuracy needs
+            labelled outcomes this household has not produced in volume yet. */}
+        <p className="mt-2 text-xs text-fg-muted">
+          Screened, open, and spend are measured live from this household.
+          Precision, false-gate rate, and latency come from the offline
+          480-case dev split, not from live traffic.
+        </p>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">

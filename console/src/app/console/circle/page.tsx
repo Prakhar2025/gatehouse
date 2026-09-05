@@ -6,7 +6,7 @@ import { Copy, Printer } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api/client";
 import { copyFor, useLocale } from "@/lib/i18n";
-import { Chip, Skeleton, TimeAgo } from "@/components/primitives";
+import { Chip, EmptyState, Skeleton, TimeAgo } from "@/components/primitives";
 
 export default function CirclePage() {
   const { locale } = useLocale();
@@ -35,6 +35,12 @@ export default function CirclePage() {
         </div>
       ) : household.data ? (
         <>
+          {household.data.members.length === 0 ? (
+            <EmptyState
+              title="No member roster yet"
+              body="Members bind over Telegram and are not persisted anywhere the console can read. The roster lands with the member registry; nothing is shown here rather than showing names the system does not actually hold."
+            />
+          ) : null}
           <ul className="grid gap-3 sm:grid-cols-2">
             {household.data.members.map((m) => (
               <li key={m.member_id} className="rounded border border-line bg-card p-4">
