@@ -106,9 +106,6 @@ export const handler = async (event) => {
     });
   }
 
-  // --- everything below requires the session ---
-  if (!validSession(cookieHeader)) return json(401, { error: "UNAUTHENTICATED" });
-
   if (route === "/me") return json(200, { ok: true });
 
   if (route === "/cases") {

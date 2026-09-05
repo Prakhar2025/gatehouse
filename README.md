@@ -155,7 +155,7 @@ make check        # format + lint + strict types + fast tests
 make eval-mini    # offline 30-case benchmark through the deterministic engine
 make eval-full-json   # 480-case dev split through the real pipeline, mock mode
 make pack-validate
-cd console && npm install && npm run dev   # guardian console (mock data)
+Live console: https://d2p659vmmc9l0e.cloudfront.net (real household data) · local: cd console && npm install && npm run dev
 ```
 
 No AWS credentials needed for any offline target. Staging deploys are
