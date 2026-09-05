@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { toStringArray } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +33,7 @@ export async function GET(req: Request) {
   const triage = parse("triage", {}) as Record<string, unknown>;
   const findings = parse("verify_findings", []) as Array<Record<string, unknown>>;
   const graph = parse("graph", { identifiers: [], prior_events: 0, max_taint: 0, unavailable: false });
-  const flags = ((): string[] => {
-    const f = item.degraded_flags;
-    const arr = Array.isArray(f) ? f : f && typeof f === "object" ? Object.values(f) : [];
-    return arr.map(String).filter((x) => x !== "NONE");
-  })();
+  const flags = toStringArray(item.degraded_flags).filter((x) => x !== "NONE");
   return NextResponse.json({
     bundle_id: String(item.sk ?? id),
     case_id: String(item.case_id ?? id),
@@ -46,7 +43,7 @@ export async function GET(req: Request) {
     prompt_versions: {},
     verdict: item.verdict ?? "NEEDS_HUMAN",
     confidence: Number(item.verdict_confidence ?? 0),
-    reason_codes: (item.reason_codes as string[]) ?? [],
+    reason_codes: toStringArray(item.reason_codes).filter((x) => x !== "NONE"),
     recommended_action: (pkg.recommended_action as string) ?? "review_bundle",
     degraded_flags: flags,
     signal_view: {
@@ -59,7 +56,7 @@ export async function GET(req: Request) {
       signal_class: triage.signal_class ?? "SCREEN",
       confidence: Number(triage.confidence ?? 0),
       payment_intent: Boolean(triage.payment_intent),
-      urgency_signals: triage.urgency_signals ?? [],
+      urgency_signals: toStringArray(triage.urgency_signals),
       reason_code: String(triage.reason_code ?? ""),
       band_source: "model",
       rule_class: triage.signal_class ?? "SCREEN",

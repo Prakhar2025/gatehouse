@@ -82,6 +82,9 @@ jobs:
       - name: Locale parity
         run: npm run check:i18n
 
+      - name: Dynamo set normalization
+        run: npm run check:setnorm
+
       - name: Override reduction
         run: npm run check:overrides
 

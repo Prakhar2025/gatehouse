@@ -246,3 +246,10 @@ Root cause: the test drove handle_telegram_signal without pinning a moment, so t
 Fix: the test drives run_pipeline with now=day_epoch(), so it asserts the band decision and nothing about the clock. The docstring says why, because the next person to copy this test needs to know the pinning is load-bearing.
 Prevention: any test asserting a notification outcome pins its moment. A suite whose result depends on when it runs is not a suite, and the nightly workflow runs at 01:00 IST, squarely inside quiet hours, so this would have failed there every single night while passing every local afternoon.
 Phase: console and release
+
+## [2026-08-31] dynamo string sets read as empty everywhere
+Symptom: degraded_flags and reason_codes arrived in the browser as {} or [] for every live case; the evidence bundle viewer showed no flags or findings on cases that had them, and the review feed looked unnaturally clean.
+Root cause: the DocumentClient decodes SS attributes as JavaScript Set objects, and a Set has no enumerable own properties, so Object.values on one returns empty. Every read path used Object.values-shaped fallbacks written against plain arrays, and the tests stayed green because they fed plain arrays.
+Fix: one exported toStringArray handles Set, Array, the raw {SS} map shape, nested maps, and scalars-as-absent; every read of SS-backed fields routes through it; a standalone check script (check:setnorm) runs seven input shapes and is wired into CI.
+Prevention: any field persisted as SS is read only through the normalizer; a new storage shape gets a new case in check-setnorm the same commit.
+Phase: console

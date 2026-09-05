@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { toStringArray } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +32,9 @@ export async function GET() {
   const items = (scan.Items ?? []) as Array<Record<string, unknown>>;
   const verdicts = items.map((i) => String(i.verdict ?? ""));
   const spends = items.map((i) => Number(i.spend_usd ?? 0));
-  const degraded = items.filter((i) => {
-    const f = i.degraded_flags;
-    const arr = Array.isArray(f) ? f : f && typeof f === "object" ? Object.values(f) : [];
-    return arr.some((x) => x !== "NONE");
-  }).length;
+  const degraded = items.filter((i) =>
+    toStringArray(i.degraded_flags).some((x) => x !== "NONE"),
+  ).length;
   const sorted = [...spends].sort((a, b) => a - b);
   const p95 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.round(0.95 * sorted.length))] : 0;
   const count = (v: string) => verdicts.filter((x) => x === v).length;

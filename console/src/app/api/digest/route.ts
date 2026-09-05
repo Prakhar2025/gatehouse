@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { toStringArray } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +26,7 @@ export async function GET() {
     .map((i) => ({
       case_id: String(i.case_id ?? ""),
       verdict: String(i.verdict ?? ""),
-      reason_codes: ((): string[] => {
-        const f = i.reason_codes;
-        return Array.isArray(f) ? f.map(String) : [];
-      })(),
+      reason_codes: toStringArray(i.reason_codes).filter((x) => x !== "NONE"),
       text: String(i.raw_text_redacted ?? ""),
       at: new Date(Number(i.created_at ?? 0) * 1000).toISOString(),
     }))

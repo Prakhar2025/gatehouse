@@ -14,6 +14,26 @@ const doc = DynamoDBDocumentClient.from(new DynamoDBClient({ region }), {
   marshallOptions: { removeUndefinedValues: true },
 });
 
+/**
+ * Normalises a Dynamo attribute that the backend writes as a string set.
+ * The document client unmarshals SS into a JS Set, whose members are not own
+ * enumerable properties, so Object.values on one returns empty and the value
+ * reads as absent rather than as an error. reason_codes, degraded_flags and
+ * top_evidence are all persisted as SS, so every read of them goes here.
+ */
+export const toStringArray = (v: unknown): string[] => {
+  if (v instanceof Set) return Array.from(v).map(String);
+  if (Array.isArray(v)) return v.map(String);
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    if (Array.isArray(obj.SS)) return obj.SS.map(String);
+    return Object.values(obj).flatMap((inner) =>
+      Array.isArray(inner) ? inner.map(String) : toStringArray(inner),
+    );
+  }
+  return [];
+};
+
 export interface LiveCase {
   case_id: string;
   household_id: string;
@@ -39,8 +59,7 @@ export async function listLiveCases(limit = 50): Promise<LiveCase[]> {
     }),
   );
   const items = (scan.Items ?? []) as Array<Record<string, unknown>>;
-  const asArray = (v: unknown): string[] =>
-    Array.isArray(v) ? v.map(String) : v && typeof v === "object" ? Array.from(Object.values(v as Record<string, string>)).map(String) : [];
+  const asArray = toStringArray;
   return items
     .map((i) => {
       const text = String(i.raw_text_redacted ?? "");
