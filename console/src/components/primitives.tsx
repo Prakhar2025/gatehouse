@@ -5,9 +5,8 @@
  * is deliberately quiet: 1px borders, no shadows except the popover, no
  * rounded-beyond-6px, tabular numbers everywhere numbers appear.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Verdict } from "@/lib/api/schemas";
-import { MOCK_NOW } from "@/lib/api/mock-data";
 import { copyFor, useLocale, verdictCopyKey } from "@/lib/i18n";
 
 const verdictStyle: Record<Verdict, string> = {
@@ -81,20 +80,55 @@ export function HashChip({ value, label }: { value: string; label?: string }) {
   );
 }
 
+const relativeLabel = (iso: string, nowMs: number): string => {
+  const m = Math.max(0, Math.round((nowMs - new Date(iso).getTime()) / 60_000));
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  if (m < 1440) return `${Math.round(m / 60)}h ago`;
+  return `${Math.round(m / 1440)}d ago`;
+};
+
+/**
+ * One ticking clock shared by every TimeAgo. Read through useSyncExternalStore
+ * so a prerendered page hydrates without a mismatch: the server snapshot is 0,
+ * which renders the absolute moment, and the client swaps to real relative
+ * time once subscribed.
+ */
+let clockNow = 0;
+const clockListeners = new Set<() => void>();
+let clockTimer: ReturnType<typeof setInterval> | null = null;
+
+const subscribeClock = (onChange: () => void) => {
+  clockListeners.add(onChange);
+  if (clockTimer === null) {
+    clockNow = Date.now();
+    clockTimer = setInterval(() => {
+      clockNow = Date.now();
+      clockListeners.forEach((listener) => listener());
+    }, 60_000);
+  }
+  return () => {
+    clockListeners.delete(onChange);
+    if (clockListeners.size === 0 && clockTimer !== null) {
+      clearInterval(clockTimer);
+      clockTimer = null;
+    }
+  };
+};
+const readClock = () => clockNow;
+const readServerClock = () => 0;
+
 export function TimeAgo({ iso }: { iso: string }) {
-  // Pure on purpose: the mock clock is fixed (MOCK_NOW), so relative labels
-  // are deterministic and hydration-stable. The live client swaps this for a
-  // store-driven now, never a render-time Date.now().
-  const ms = new Date(MOCK_NOW).getTime() - new Date(iso).getTime();
-  const m = Math.max(0, Math.round(ms / 60_000));
+  // The clock has to be the real one: measuring live cases against the fixed
+  // mock clock rendered week-old cases as "just now", which is a page telling
+  // the reader something false. Date.now() cannot be read during render in a
+  // prerendered page without a hydration mismatch, so the first paint shows
+  // the absolute moment and the relative label arrives after mount.
+  const nowMs = useSyncExternalStore(subscribeClock, readClock, readServerClock);
   const label =
-    m < 1
-      ? "just now"
-      : m < 60
-        ? `${m}m ago`
-        : m < 1440
-          ? `${Math.round(m / 60)}h ago`
-          : `${Math.round(m / 1440)}d ago`;
+    nowMs === 0
+      ? new Date(iso).toISOString().slice(0, 16).replace("T", " ") + "Z"
+      : relativeLabel(iso, nowMs);
   return (
     <time dateTime={iso} className="font-mono text-xs text-fg-muted tabular-nums" title={iso}>
       {label}

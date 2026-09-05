@@ -95,8 +95,8 @@ export const liveApi: GatehouseApi = {
     }));
   },
   async getMetrics(): Promise<MetricsSnapshot> {
-    const r = await j<{ metrics: MetricsSnapshot }>("/metrics");
-    return { ...MOCK_METRICS, ...r.metrics };
+    const r = await j<{ metrics: MetricsSnapshot; window_days?: number }>("/metrics");
+    return { ...MOCK_METRICS, ...r.metrics, window_days: r.window_days };
   },
   async getSpend(): Promise<SpendRollup> {
     const m = await this.getMetrics();

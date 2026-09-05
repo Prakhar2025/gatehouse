@@ -216,6 +216,9 @@ export const SpendRollupSchema = z.object({
 export type SpendRollup = z.infer<typeof SpendRollupSchema>;
 
 export const MetricsSnapshotSchema = z.object({
+  // The rolling window every counter and the trend chart report on. Optional
+  // so an older gateway that does not send it still validates.
+  window_days: z.number().optional(),
   screened_7d: z.number(),
   silent_7d: z.number(),
   escalations_open: z.number(),

@@ -26,6 +26,9 @@ export default function DashboardPage() {
   const household = useQuery({ queryKey: ["household"], queryFn: () => api().getHousehold() });
 
   const m = metrics.data;
+  // One label for every window-scoped number on this page, taken from the
+  // gateway so the copy cannot claim a window the data does not cover.
+  const windowLabel = `${m?.window_days ?? 7}d`;
   const open = queue.data?.cases ?? [];
   const topOpen = open[0];
 
@@ -92,7 +95,11 @@ export default function DashboardPage() {
       <section aria-label="Metrics">
         {m ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label={copyFor(locale, "metric_screened")} value={String(m.screened_7d)} sub={`${m.silent_7d} silent`} />
+            <Stat
+              label={`${copyFor(locale, "metric_screened")} (${windowLabel})`}
+              value={String(m.screened_7d)}
+              sub={`${m.silent_7d} silent`}
+            />
             <Stat label={copyFor(locale, "metric_open")} value={String(m.escalations_open)} />
             <Stat
               label={copyFor(locale, "metric_latency")}
@@ -102,7 +109,7 @@ export default function DashboardPage() {
             <Stat
               label={copyFor(locale, "metric_spend")}
               value={`$${m.spend_mean_usd.toFixed(5)}`}
-              sub={`$${m.spend_7d_usd.toFixed(4)} / 7d`}
+              sub={`$${m.spend_7d_usd.toFixed(4)} / ${windowLabel}`}
             />
             <Stat
               label={copyFor(locale, "metric_precision")}
@@ -125,9 +132,9 @@ export default function DashboardPage() {
         {/* Which numbers are measured here and which are not: accuracy needs
             labelled outcomes this household has not produced in volume yet. */}
         <p className="mt-2 text-xs text-fg-muted">
-          Screened, open, and spend are measured live from this household.
-          Precision, false-gate rate, and latency come from the offline
-          480-case dev split, not from live traffic.
+          Screened, open, and spend are measured live from this household
+          over the last {windowLabel}. Precision, false-gate rate, and latency
+          come from the offline 480-case dev split, not from live traffic.
         </p>
       </section>
 
@@ -135,7 +142,7 @@ export default function DashboardPage() {
         {/* Weekly trend, hand-rolled SVG-free bars, no chart library weight */}
         <section aria-labelledby="trend-h" className="rounded border border-line bg-card p-4">
           <h2 id="trend-h" className="text-xs font-medium text-fg-muted">
-            Volume, 7 days
+            Volume, {windowLabel}
           </h2>
           {m ? (
             <div className="mt-3 flex h-24 items-end gap-2" role="img" aria-label="cases per day this week">
@@ -205,6 +212,12 @@ export default function DashboardPage() {
         <h2 id="circle-h" className="border-b border-line px-4 py-2.5 text-xs font-medium text-fg-muted">
           {household.data ? household.data.name : copyFor(locale, "nav_circle")}
         </h2>
+        {household.data && household.data.members.length === 0 ? (
+          <p className="px-4 py-3 text-xs text-fg-muted">
+            Members bind over Telegram and are not persisted anywhere the
+            console can read yet, so no roster is shown here.
+          </p>
+        ) : null}
         {household.data ? (
           <ul className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
             {household.data.members.map((mem) => (

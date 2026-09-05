@@ -268,3 +268,18 @@ Root cause: the values are real, and match docs/eval-results/full-dev-metrics.js
 Fix: the figures live in a named BENCHMARK constant carrying its source and date, the metrics response exposes that block, the tiles say "480-case dev split", and a line under the row states which numbers are measured live here and which are not.
 Prevention: any number rendered next to live measurement states its provenance on the same surface. A figure whose source is not visible where it is read is treated as unlabelled, regardless of how correct it is.
 Phase: console and release
+
+## [2026-09-05] the dashboard reported a window and a clock it did not have
+Symptom: the public dashboard showed "Screened (7d) 10" beside a "Volume, 7 days" chart whose every bar was zero, and the chart's axis read "Sep 30" and "Sep 31", a date that does not exist. Separately every case on the page said "just now", including cases from eight days earlier.
+Root cause: three independent shortcuts pointing the same way. The counters summed every bundle since the soak start while the chart bucketed only the last seven days, so the two disagreed by construction and the disagreement grew as the window slid. The chart's day label interpolated a hardcoded "Sep" onto a month-day key, so August dates were relabelled as September. And TimeAgo measured against MOCK_NOW, a frozen mock clock, with a comment promising the live client would swap in a real one; the live client shipped and the swap never happened, so live timestamps were compared to a date in August and every one of them rounded to "just now".
+Impact: all three are the same failure, a surface stating something the data does not support, on a page whose whole argument is measurement honesty. The nonexistent date is the visible one; the frozen clock is the one that actually misleads, because a week-old case presented as current changes what a reader concludes about the system running.
+Fix: WINDOW_DAYS is one constant driving the counters, the chart, and the window published to the client, so the copy cannot claim a window the data does not cover. Day labels carry the real month. TimeAgo reads a shared ticking clock through useSyncExternalStore, which keeps a prerendered page hydration-safe: the server snapshot renders the absolute moment and the client swaps to relative time after subscribing.
+Prevention: two numbers describing the same window are computed from one source, never typed twice. A component that needs the current time takes it from a real clock; a fixed clock is a test fixture and never ships behind a comment promising a later swap.
+Phase: console and release
+
+## [2026-09-05] a sync with --delete took the public site down
+Symptom: after uploading a fresh static export with `aws s3 sync --delete`, every route except the landing page returned 403 AccessDenied.
+Root cause: the previous upload had been made by hand with extensionless object keys, so a request for /console found a key literally named "console". The export emits console.html, and the sync deleted the hand-made keys it did not produce. CloudFront on an S3 REST origin resolves keys literally and applies its index document only at the root, so nothing else resolved.
+Fix: the build mirrors every page to <route>/index.html, and a CloudFront viewer-request function rewrites extensionless paths onto that index. Deploying is now a plain sync with nothing to remember and no per-file content types to set.
+Prevention: a deploy step that depends on manual object naming is a deploy step that will be wiped by the first correct sync. Hosting behaviour belongs in a function or the build, not in the shape of a one-off upload.
+Phase: console and release

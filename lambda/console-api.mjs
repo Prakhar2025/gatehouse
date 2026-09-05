@@ -24,6 +24,9 @@ const region = process.env.GATEHOUSE_REGION ?? "ap-south-1";
 const table = process.env.GATEHOUSE_CASES_TABLE_NAME ?? "gatehouse-cases-staging";
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({ region }));
 const SOAK_START = Math.floor(Date.parse("2026-08-27T00:00:00Z") / 1000);
+/** Rolling window the dashboard counters and the trend chart both report on. */
+const WINDOW_DAYS = 14;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const PASSWORD = process.env.CONSOLE_PASSWORD ?? "";
 const SESSION_COOKIE = "gh_session";
 const HOUSEHOLD = process.env.GATEHOUSE_HOUSEHOLD_ID ?? "shukla-home";
@@ -154,7 +157,13 @@ export const handler = async (event) => {
   }
 
   if (route === "/metrics") {
-    const items = await scanBundles();
+    // Every counter on the dashboard reports the same rolling window as the
+    // trend chart beside it. Scanning from the soak start and counting all of
+    // it would drift out of agreement with the chart as the window slides.
+    const windowStart = Math.floor(Date.now() / 1000) - WINDOW_DAYS * 86400;
+    const items = (await scanBundles()).filter(
+      (i) => Number(i.created_at ?? 0) >= windowStart,
+    );
     const verdicts = items.map((i) => String(i.verdict ?? ""));
     const spends = items.map((i) => Number(i.spend_usd ?? 0));
     const count = (v) => verdicts.filter((x) => x === v).length;
@@ -162,14 +171,19 @@ export const handler = async (event) => {
       toStringArray(i.degraded_flags).some((f) => f !== "NONE"),
     ).length;
     const sorted = [...spends].sort((a, b) => a - b);
+    // The trend window and the counters beside it must be the same window,
+    // or the page contradicts itself: a "7 days" chart reading zero next to a
+    // "7 days" tile reading ten is one of them lying. WINDOW_DAYS is the
+    // single source for both, and the labels carry the real month rather than
+    // a hardcoded one, which previously rendered August 31 as "Sep 31".
     const perDay = new Map();
     const now = new Date();
-    for (let d = 6; d >= 0; d -= 1) {
-      const key = new Date(now.getTime() - d * 86400000).toISOString().slice(5, 10);
-      perDay.set(key, { cases: 0, escalations: 0 });
+    for (let d = WINDOW_DAYS - 1; d >= 0; d -= 1) {
+      const at = new Date(now.getTime() - d * 86400000);
+      perDay.set(at.toISOString().slice(0, 10), { at, cases: 0, escalations: 0 });
     }
     for (const it of items) {
-      const key = new Date(Number(it.created_at ?? 0) * 1000).toISOString().slice(5, 10);
+      const key = new Date(Number(it.created_at ?? 0) * 1000).toISOString().slice(0, 10);
       const bucket = perDay.get(key);
       if (!bucket) continue;
       bucket.cases += 1;
@@ -178,6 +192,7 @@ export const handler = async (event) => {
     return json(200, {
       health: { status: "ok", version: "1.4.2", degraded: [] },
       benchmark: BENCHMARK,
+      window_days: WINDOW_DAYS,
       metrics: {
         screened_7d: items.length,
         silent_7d: count("SAFE"),
@@ -202,8 +217,8 @@ export const handler = async (event) => {
           { verdict: "SCAM", count: count("SCAM") },
           { verdict: "NEEDS_HUMAN", count: count("NEEDS_HUMAN") },
         ],
-        trend_7d: [...perDay.entries()].map(([day, v]) => ({
-          day: `Sep ${day.slice(3)}`,
+        trend_7d: [...perDay.values()].map((v) => ({
+          day: `${MONTHS[v.at.getUTCMonth()]} ${String(v.at.getUTCDate()).padStart(2, "0")}`,
           cases: v.cases,
           escalations: v.escalations,
         })),
