@@ -70,6 +70,9 @@ def main() -> int:
         "--parameter-overrides",
         *overrides,
     ]
+    # Extra flags reach sam untouched, so a deploy can be previewed with
+    # --no-execute-changeset before anything is applied to a live stack.
+    cmd.extend(sys.argv[1:])
     proc = subprocess.run(cmd, capture_output=True, text=True)  # noqa: S603
     out = (proc.stdout or "") + (proc.stderr or "")
     secret_values = [v for v in vals.values() if len(v) > 12]

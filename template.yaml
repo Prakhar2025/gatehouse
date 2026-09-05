@@ -135,6 +135,7 @@ Resources:
         Variables:
           GATEHOUSE_REGION: !Ref AWS::Region
           GATEHOUSE_CASES_TABLE_NAME: !Ref CasesTable
+          GATEHOUSE_HOUSEHOLD_ID: shukla-home
           CONSOLE_PASSWORD: !Ref ConsolePassword
       Events:
         ConsoleAuth:
