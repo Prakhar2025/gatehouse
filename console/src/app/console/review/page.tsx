@@ -1,5 +1,7 @@
 "use client";
 
+const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
+
 /**
  * Live review: real cases from DynamoDB, guardian taps the truth. Every tap
  * is an override row; the weekly taxonomy consumes disagreements. This is
@@ -26,7 +28,7 @@ export default function ReviewPage() {
   const cases = useQuery({
     queryKey: ["live-cases"],
     queryFn: async (): Promise<LiveCase[]> => {
-      const r = await fetch("/api/cases");
+      const r = await fetch(`${BASE}/cases`);
       if (!r.ok) throw new Error("LIVE_READ_FAILED");
       return (await r.json()).cases;
     },
@@ -38,7 +40,7 @@ export default function ReviewPage() {
       disagreed: number;
       labels: Record<string, boolean>;
     }> => {
-      const r = await fetch("/api/review");
+      const r = await fetch(`${BASE}/review`);
       if (!r.ok) throw new Error("OVERRIDE_READ_FAILED");
       return r.json();
     },
@@ -46,7 +48,7 @@ export default function ReviewPage() {
 
   const tap = useMutation({
     mutationFn: (input: { case_id: string; agree: boolean }) =>
-      fetch("/api/review", {
+      fetch(`${BASE}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),

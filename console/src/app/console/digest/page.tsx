@@ -1,5 +1,7 @@
 "use client";
 
+const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
+
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Skeleton, VerdictBadge } from "@/components/primitives";
@@ -9,7 +11,7 @@ export default function DigestPage() {
   const digest = useQuery({
     queryKey: ["digest"],
     queryFn: async () => {
-      const r = await fetch("/api/digest");
+      const r = await fetch(`${BASE}/digest`);
       if (!r.ok) throw new Error("DIGEST_FAILED");
       return r.json() as Promise<{
         generated_at: string;
@@ -51,7 +53,7 @@ export default function DigestPage() {
           {digest.data.escalations.map((e) => (
             <Link
               key={e.case_id}
-              href={`/console/cases/${e.case_id}`}
+              href={`/console/case?id=${e.case_id}`}
               className="block rounded border border-line bg-card p-4 transition hover:border-line-strong"
             >
               <div className="flex items-center gap-2">

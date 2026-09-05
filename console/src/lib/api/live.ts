@@ -17,7 +17,9 @@ import type {
   SpendRollup,
 } from "./schemas";
 
+const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/console-api";
 const j = async <T,>(input: string | Response, init?: RequestInit): Promise<T> => {
+  if (typeof input === "string") input = `${BASE}${input}`;
   const r = typeof input === "string" ? await fetch(input, init) : input;
   if (!r.ok) throw new Error(`live_${r.status}`);
   return (await r.json()) as T;
@@ -41,11 +43,11 @@ const toSummary = (c: Record<string, unknown>): CaseSummary => {
 
 export const liveApi: GatehouseApi = {
   async getHealth(): Promise<Health> {
-    const r = await j<{ health: Health }>("/api/metrics");
+    const r = await j<{ health: Health }>("/metrics");
     return r.health;
   },
   async listCases(params): Promise<CasePage> {
-    const raw = await j<{ cases: Record<string, unknown>[] }>("/api/cases");
+    const raw = await j<{ cases: Record<string, unknown>[] }>("/cases");
     let cases = raw.cases.map(toSummary);
     if (params?.state) cases = cases.filter((c) => c.state === params.state);
     return { cases, next_cursor: null };
@@ -63,7 +65,7 @@ export const liveApi: GatehouseApi = {
     return [];
   },
   async postDecision(caseId, body): Promise<{ case_id: string; state: "CLOSED_ACTIONED"; graph_commit: string }> {
-    await j("/api/review", {
+    await j("/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ case_id: caseId, agree: true, note: body.note ?? body.action }),
@@ -77,7 +79,7 @@ export const liveApi: GatehouseApi = {
     return MOCK_AUDIT;
   },
   async getMetrics(): Promise<MetricsSnapshot> {
-    const r = await j<{ metrics: MetricsSnapshot }>("/api/metrics");
+    const r = await j<{ metrics: MetricsSnapshot }>("/metrics");
     return { ...MOCK_METRICS, ...r.metrics };
   },
   async getSpend(): Promise<SpendRollup> {

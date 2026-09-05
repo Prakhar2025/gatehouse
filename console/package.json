@@ -10,7 +10,8 @@
     "check:i18n": "tsx scripts/check-i18n.ts",
     "typecheck": "tsc --noEmit",
     "check:overrides": "tsx scripts/check-overrides.ts",
-    "check:setnorm": "tsx scripts/check-setnorm.ts"
+    "check:setnorm": "tsx scripts/check-setnorm.ts",
+    "build:static": "node scripts/build-static.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1121.0",
