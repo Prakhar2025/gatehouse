@@ -168,7 +168,7 @@ export default function ReviewPage() {
                 <span className="ml-auto">{c.member_name}</span>
                 <span>{new Date(c.received_at).toLocaleString()}</span>
               </div>
-              <p className="whitespace-pre-wrap px-4 py-3 text-sm leading-relaxed">
+              <p className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-relaxed">
                 {c.text || "(signal text lives in the bundle; text projection pending)"}
               </p>
               <div className="flex items-center justify-end gap-2 px-4 pb-3">

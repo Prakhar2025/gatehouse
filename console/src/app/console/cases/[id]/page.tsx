@@ -115,7 +115,7 @@ export default function CaseDetailPage() {
             <span>{b.signal_view.channel}</span>
             <TimeAgo iso={b.signal_view.received_at} />
           </div>
-          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-relaxed">
+          <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">
             {b.signal_view.text}
           </pre>
         </div>

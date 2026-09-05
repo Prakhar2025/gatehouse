@@ -103,7 +103,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             {copyFor(locale, "gate_degraded")}: {degraded.join(", ")}
           </div>
         ) : null}
-        <main id="main" className="min-w-0 flex-1 pb-16 md:pb-0">
+        <main id="main" className="min-w-0 flex-1 overflow-x-hidden pb-16 md:pb-0">
           {children}
         </main>
         <nav

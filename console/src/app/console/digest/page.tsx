@@ -58,7 +58,7 @@ export default function DigestPage() {
                 <VerdictBadge verdict={e.verdict as never} small />
                 <span className="font-mono text-[10px] text-fg-subtle">{e.case_id}</span>
               </div>
-              <p className="mt-2 line-clamp-2 text-sm text-fg/80">{e.text}</p>
+              <p className="mt-2 line-clamp-2 break-words text-sm text-fg/80">{e.text}</p>
             </Link>
           ))}
         </>

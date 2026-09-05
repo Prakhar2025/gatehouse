@@ -38,17 +38,26 @@ export async function GET() {
   const sorted = [...spends].sort((a, b) => a - b);
   const p95 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.round(0.95 * sorted.length))] : 0;
   const count = (v: string) => verdicts.filter((x) => x === v).length;
+  // Always seven day slots ending today, zero-filled: a chart that claims a
+  // week must show a week, including the quiet days.
   const perDay = new Map<string, { cases: number; escalations: number }>();
+  const today = new Date();
+  for (let d = 6; d >= 0; d -= 1) {
+    const key = new Date(today.getTime() - d * 86400000).toISOString().slice(5, 10);
+    perDay.set(key, { cases: 0, escalations: 0 });
+  }
   for (const it of items) {
-    const d = new Date(Number(it.created_at ?? 0) * 1000).toISOString().slice(5, 10);
-    const bucket = perDay.get(d) ?? { cases: 0, escalations: 0 };
+    const key = new Date(Number(it.created_at ?? 0) * 1000).toISOString().slice(5, 10);
+    const bucket = perDay.get(key);
+    if (!bucket) continue;
     bucket.cases += 1;
     if (["SUSPICIOUS", "SCAM", "NEEDS_HUMAN"].includes(String(it.verdict))) bucket.escalations += 1;
-    perDay.set(d, bucket);
   }
-  const trend = [...perDay.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([day, v]) => ({ day: `Sep ${day.slice(3)}`, cases: v.cases, escalations: v.escalations }));
+  const trend = [...perDay.entries()].map(([day, v]) => ({
+    day: `Sep ${day.slice(3)}`,
+    cases: v.cases,
+    escalations: v.escalations,
+  }));
   return NextResponse.json({
     health: { status: "ok", version: "1.4.2", degraded: [] },
     metrics: {
