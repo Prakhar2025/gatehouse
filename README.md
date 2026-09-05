@@ -117,7 +117,7 @@ omy.md), with the raw pre and post artifacts committed beside it. The local
 mock runner reproduces the same split byte-identically offline; the sealed
 120-case hold-out opens exactly once at the release gate.
 
-Live soak (interim, real households): 26 cases in the first window, 14
+Live soak (interim snapshot Aug 30, real households): 26 cases in the first window, 14
 passed silent, 4 SCAM, 8 SUSPICIOUS, zero degraded incidents,
 [report](docs/eval-results/soak-interim.md).
 
@@ -169,7 +169,7 @@ packs/in/pack.yaml    India country pack v0.2.0 (issuers, trusted tier, en+hi le
 console/              guardian console (Next.js 16, locked design system)
 docs/                 20 controlled documents, the single source of truth
 docs/eval-results/    every published number, regenerable byte-identically
-tests/                414-test suite mirroring every module
+tests/                469-test suite mirroring every module
 ```
 
 Start reading at `docs/README.md`. Doctrine: `docs/19-silence-architecture.md`.

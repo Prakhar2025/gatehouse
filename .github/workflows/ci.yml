@@ -43,6 +43,9 @@ jobs:
       - name: Validate country packs
         run: python scripts/validate_packs.py
 
+      - name: README claims check
+        run: python scripts/check_readme_tests.py
+
       - name: Offline mini evaluation
         run: python -m gatehouse.evaluation.run_mini --pack packs/in/pack.yaml
 

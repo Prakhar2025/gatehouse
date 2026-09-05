@@ -23,9 +23,13 @@ npm run check:i18n # en/hi locale parity (doc 10 criterion 5)
 
 ## Data layer
 
-`src/lib/api/client.ts` implements the doc 14 contract against a mock
-transport (`mock-data.ts`, deterministic and seeded from the first real soak
-messages). The gateway swap is one `setTransport` call; no screen code changes.
+`src/lib/api/client.ts` implements the doc 14 contract. The default
+transport is live: API routes read the real Dynamo tables server-side with
+the default credential chain, and the verdict path (dashboard, queue, case
+detail, review) runs on real cases. Household, audit, and benchmark screens
+still render seeded sample data until their tables exist; the mock transport
+(`mock-data.ts`, deterministic and seeded from the first real soak messages)
+remains for previews and tests. The gateway swap is one `setTransport` call; no screen code changes.
 Zod schemas in `schemas.ts` mirror the backend contracts and are the drift tripwire.
 
 ## Scope note
