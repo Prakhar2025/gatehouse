@@ -18,6 +18,10 @@ Parameters:
   GuardianChatId:
     Type: String
     Description: Guardian-facing Telegram chat id for escalation cards
+  ConsolePassword:
+    Type: String
+    Description: Guardian console password (HMAC session cookie)
+    NoEcho: true
   GraphSalt:
     Type: String
     Description: HMAC salt for identifier hashing (rotate per environment)
@@ -117,6 +121,43 @@ Resources:
               Resource:
                 - arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0
                 - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/apac.amazon.nova-micro-v1:0
+
+  ConsoleApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub gatehouse-console-api-${Environment}
+      Handler: console-api.handler
+      CodeUri: lambda/
+      Runtime: nodejs22.x
+      MemorySize: 512
+      Timeout: 15
+      Environment:
+        Variables:
+          GATEHOUSE_REGION: !Ref AWS::Region
+          GATEHOUSE_CASES_TABLE_NAME: !Ref CasesTable
+          CONSOLE_PASSWORD: !Ref ConsolePassword
+      Events:
+        ConsoleAuth:
+          Type: HttpApi
+          Properties:
+            Path: /console-api/auth
+            Method: POST
+            ApiId: !Ref HttpApi
+        ConsoleApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /console-api/{proxy+}
+            Method: ANY
+            ApiId: !Ref HttpApi
+        ConsoleApiRoot:
+          Type: HttpApi
+          Properties:
+            Path: /console-api
+            Method: ANY
+            ApiId: !Ref HttpApi
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CasesTable
 
   DigestFunction:
     Type: AWS::Serverless::Function

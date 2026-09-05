@@ -51,6 +51,7 @@ def main() -> int:
         # treats unknown tokens as absent (falls back to logging sink).
         f"TelegramBotToken={vals.get('GATEHOUSE_TELEGRAM_BOT_TOKEN') or 'PENDING-ROTATION'}",
         f"GuardianChatId={vals.get('GATEHOUSE_GUARDIAN_TELEGRAM_CHAT_ID') or '0'}",
+        f"ConsolePassword={vals.get('CONSOLE_PASSWORD') or 'change-me-now'}",
         "WhatsAppAppSecret=pending-meta-review",
         "WhatsAppVerifyToken=pending-meta-review",
     ]
