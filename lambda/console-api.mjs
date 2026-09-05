@@ -1,8 +1,12 @@
 /**
  * Console API Lambda: serves the gatehouse console's data endpoints from the
  * same AWS account as the bot. Zero packaging: aws-sdk v3 ships in the
- * Node runtime. Auth is the HMAC session cookie issued by /auth; every other
- * path validates it before touching Dynamo.
+ * Node runtime.
+ *
+ * Access split: reads are public so the console can be shown without a
+ * password. Writes require the HMAC session cookie issued by /auth, because
+ * an unauthenticated write would let a stranger label cases as the guardian
+ * and poison the ledger the accuracy metrics are computed from.
  *
  * Env: CONSOLE_PASSWORD, GATEHOUSE_REGION (default ap-south-1),
  * GATEHOUSE_CASES_TABLE_NAME (default gatehouse-cases-staging).
@@ -22,6 +26,24 @@ const doc = DynamoDBDocumentClient.from(new DynamoDBClient({ region }));
 const SOAK_START = Math.floor(Date.parse("2026-08-27T00:00:00Z") / 1000);
 const PASSWORD = process.env.CONSOLE_PASSWORD ?? "";
 const SESSION_COOKIE = "gh_session";
+const HOUSEHOLD = process.env.GATEHOUSE_HOUSEHOLD_ID ?? "shukla-home";
+
+/**
+ * Accuracy and latency figures from the sealed 480-case dev split, mirrored
+ * from docs/eval-results/full-dev-metrics.json. They are benchmark results,
+ * not live household measurement, and every response that carries them also
+ * carries `benchmark.source` so the console never presents them as live.
+ */
+const BENCHMARK = {
+  source: "480-case dev split, offline",
+  as_of: "2026-08-31",
+  precision: 1.0,
+  precision_ci: [0.9887, 1.0],
+  false_gate_rate: 0.0,
+  false_gate_ci: [0.0, 0.0253],
+  latency_p50_ms: 1180,
+  latency_p95_ms: 2640,
+};
 const TTL = 60 * 60 * 12;
 
 const sign = (p) => createHmac("sha256", PASSWORD).update(p).digest("base64url");
@@ -54,6 +76,13 @@ const json = (code, body, extraHeaders = {}) => ({
   },
   body: JSON.stringify(body),
 });
+
+/**
+ * Public reads are cacheable. Without this every visitor to a public URL runs
+ * a full table Scan, which is both a latency floor and an unbounded cost tap
+ * that grows with the table. Short TTL keeps the console feeling live.
+ */
+const CACHEABLE = { "cache-control": "public, max-age=30, s-maxage=60" };
 
 const toStringArray = (v) => {
   if (v instanceof Set) return Array.from(v).map(String);
@@ -106,7 +135,7 @@ export const handler = async (event) => {
     });
   }
 
-  if (route === "/me") return json(200, { ok: true });
+  if (route === "/me") return json(200, { ok: true, authed: validSession(cookieHeader) });
 
   if (route === "/cases") {
     const items = await scanBundles();
@@ -121,7 +150,7 @@ export const handler = async (event) => {
         degraded_flags: toStringArray(i.degraded_flags).filter((f) => f !== "NONE"),
       }))
       .sort((a, b) => b.received_at.localeCompare(a.received_at));
-    return json(200, { cases });
+    return json(200, { cases }, CACHEABLE);
   }
 
   if (route === "/metrics") {
@@ -148,18 +177,25 @@ export const handler = async (event) => {
     }
     return json(200, {
       health: { status: "ok", version: "1.4.2", degraded: [] },
+      benchmark: BENCHMARK,
       metrics: {
         screened_7d: items.length,
         silent_7d: count("SAFE"),
         escalations_open: count("SUSPICIOUS") + count("SCAM"),
-        latency_p50_ms: 1180,
-        latency_p95_ms: 2640,
+        latency_p50_ms: BENCHMARK.latency_p50_ms,
+        latency_p95_ms: BENCHMARK.latency_p95_ms,
         spend_mean_usd: spends.length ? spends.reduce((a, b) => a + b, 0) / spends.length : 0,
         spend_7d_usd: spends.reduce((a, b) => a + b, 0),
-        precision: 1.0,
-        precision_ci: [0.9887, 1.0],
-        false_gate_rate: 0.0,
-        false_gate_ci: [0.0, 0.0253],
+        // Benchmark figures, not live measurement. They come from the sealed
+        // 480-case dev split committed at docs/eval-results/full-dev-metrics.json
+        // and are surfaced under `benchmark` below so the console can label
+        // them. Live accuracy needs labelled outcomes the household has not
+        // produced in volume yet; reporting these as live would be the exact
+        // measurement lie the project exists to avoid.
+        precision: BENCHMARK.precision,
+        precision_ci: BENCHMARK.precision_ci,
+        false_gate_rate: BENCHMARK.false_gate_rate,
+        false_gate_ci: BENCHMARK.false_gate_ci,
         verdict_mix_7d: [
           { verdict: "SAFE", count: count("SAFE") },
           { verdict: "SUSPICIOUS", count: count("SUSPICIOUS") },
@@ -174,7 +210,7 @@ export const handler = async (event) => {
         degraded_cases: degraded,
         spend_p95_usd: sorted.length ? sorted[Math.min(sorted.length - 1, Math.round(0.95 * sorted.length))] : 0,
       },
-    });
+    }, CACHEABLE);
   }
 
   if (route === "/digest") {
@@ -193,7 +229,7 @@ export const handler = async (event) => {
       cases: rows.length,
       silent: rows.filter((r) => r.verdict === "SAFE").length,
       escalations: rows.filter((r) => r.verdict !== "SAFE"),
-    });
+    }, CACHEABLE);
   }
 
   if (route === "/bundle") {
@@ -268,10 +304,39 @@ export const handler = async (event) => {
       },
       engagement: null,
       integrity: { sha256: String(item.canary ?? ""), chain_prev: null },
-    });
+    }, CACHEABLE);
+  }
+
+  if (route === "/review" && method === "GET") {
+    // Counts reduce to the latest label per case, not a row count. Override
+    // rows are append-only with a millisecond sort key, so a guardian who
+    // corrects the same case twice would otherwise be counted twice and a
+    // disagreement later revised to an agreement would never clear.
+    const r = await doc.send(
+      new ScanCommand({
+        TableName: table,
+        FilterExpression: "begins_with(sk, :ovr)",
+        ExpressionAttributeValues: { ":ovr": "OVERRIDE#" },
+      }),
+    );
+    const latest = new Map();
+    for (const i of r.Items ?? []) {
+      const caseId = String(i.case_id ?? "");
+      if (!caseId) continue;
+      const stamp = Number(String(i.sk ?? "").split("#")[1] ?? 0);
+      const prev = latest.get(caseId);
+      if (!prev || stamp >= prev.stamp) latest.set(caseId, { stamp, agree: i.agree !== false });
+    }
+    const labels = Object.fromEntries([...latest].map(([k, v]) => [k, v.agree]));
+    return json(200, {
+      total: latest.size,
+      disagreed: [...latest.values()].filter((v) => !v.agree).length,
+      labels,
+    }, CACHEABLE);
   }
 
   if (route === "/review" && method === "POST") {
+    if (!validSession(cookieHeader)) return json(401, { error: "UNAUTHENTICATED" });
     const body = JSON.parse(event.body ?? "{}");
     if (!body.case_id || typeof body.agree !== "boolean") {
       return json(400, { error: "INVALID_BODY" });
@@ -280,7 +345,7 @@ export const handler = async (event) => {
       new PutCommand({
         TableName: table,
         Item: {
-          pk: `HOUSEHOLD#${String(event.headers?.["x-household"] ?? "shukla-home")}`,
+          pk: `HOUSEHOLD#${HOUSEHOLD}`,
           sk: `OVERRIDE#${Date.now()}#${body.case_id}`,
           case_id: body.case_id,
           agree: body.agree,
@@ -291,6 +356,30 @@ export const handler = async (event) => {
       }),
     );
     return json(200, { ok: true });
+  }
+
+  if (route === "/audit") {
+    // The override ledger is the real, append-only record of guardian action.
+    // It is the only audit source that exists today, so it is the only one
+    // served: an audit screen backed by invented rows is worse than none.
+    const r = await doc.send(
+      new ScanCommand({
+        TableName: table,
+        FilterExpression: "begins_with(sk, :ovr)",
+        ExpressionAttributeValues: { ":ovr": "OVERRIDE#" },
+      }),
+    );
+    const entries = (r.Items ?? [])
+      .map((i) => ({
+        id: String(i.sk ?? ""),
+        at: new Date(Number(i.created_at ?? 0) * 1000).toISOString(),
+        actor: String(i.actor ?? "guardian"),
+        action: i.agree === false ? "labelled_wrong" : "labelled_correct",
+        case_id: String(i.case_id ?? ""),
+        note: String(i.note ?? ""),
+      }))
+      .sort((a, b) => b.at.localeCompare(a.at));
+    return json(200, { entries }, CACHEABLE);
   }
 
   if (route === "/overrides") {
@@ -305,7 +394,7 @@ export const handler = async (event) => {
     return json(200, {
       total: items.length,
       disagreed: items.filter((i) => i.agree === false).length,
-    });
+    }, CACHEABLE);
   }
 
   return json(404, { error: "NOT_FOUND" });

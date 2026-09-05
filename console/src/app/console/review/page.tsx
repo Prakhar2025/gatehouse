@@ -46,6 +46,18 @@ export default function ReviewPage() {
     },
   });
 
+  // Reads are public; labelling is not. Asking the server rather than
+  // assuming keeps the button state honest about what a tap would do.
+  const session = useQuery({
+    queryKey: ["session"],
+    queryFn: async (): Promise<boolean> => {
+      const r = await fetch(`${BASE}/me`);
+      if (!r.ok) return false;
+      return Boolean((await r.json()).authed);
+    },
+  });
+  const canLabel = session.data === true;
+
   const tap = useMutation({
     mutationFn: (input: { case_id: string; agree: boolean }) =>
       fetch(`${BASE}/review`, {
@@ -174,11 +186,16 @@ export default function ReviewPage() {
                 {c.text || "(signal text lives in the bundle; text projection pending)"}
               </p>
               <div className="flex items-center justify-end gap-2 px-4 pb-3">
+                {!canLabel ? (
+                  <span className="mr-auto text-xs text-fg-muted">
+                    Sign in to label. Reading is open to everyone.
+                  </span>
+                ) : null}
                 <button
                   type="button"
                   className="inline-flex items-center gap-1.5 rounded border border-safe-line bg-safe-bg px-3 py-1.5 text-xs font-medium text-safe-fg hover:opacity-80 aria-pressed:ring-1 aria-pressed:ring-safe-fg"
                   aria-pressed={labels[c.case_id] === true}
-                  disabled={tap.isPending}
+                  disabled={tap.isPending || !canLabel}
                   onClick={() => tap.mutate({ case_id: c.case_id, agree: true })}
                 >
                   <Check size={13} aria-hidden /> Verdict correct
@@ -187,7 +204,7 @@ export default function ReviewPage() {
                   type="button"
                   className="inline-flex items-center gap-1.5 rounded border border-scam-line bg-scam-bg px-3 py-1.5 text-xs font-medium text-scam-fg hover:opacity-80 aria-pressed:ring-1 aria-pressed:ring-scam-fg"
                   aria-pressed={labels[c.case_id] === false}
-                  disabled={tap.isPending}
+                  disabled={tap.isPending || !canLabel}
                   onClick={() => tap.mutate({ case_id: c.case_id, agree: false })}
                 >
                   <X size={13} aria-hidden /> Verdict wrong

@@ -46,6 +46,9 @@ jobs:
       - name: README claims check
         run: python scripts/check_readme_tests.py
 
+      - name: Console API write auth
+        run: python scripts/check_write_auth.py
+
       - name: Offline mini evaluation
         run: python -m gatehouse.evaluation.run_mini --pack packs/in/pack.yaml
 
